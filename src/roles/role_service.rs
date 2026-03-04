@@ -1,12 +1,11 @@
-use sqlx::{Error, PgPool};
+use crate::roles::{role_error::RoleError, role_model::RoleModel, role_repository::RoleRepository};
 
-use crate::roles::role_model::RoleModel;
-
-pub async fn get_all_roles(pool: &PgPool) -> Result<Vec<RoleModel>, Error> {
-    sqlx::query_as!(
-        RoleModel,
-        "SELECT id, code, name, created_at, updated_at FROM roles"
-    )
-    .fetch_all(pool)
-    .await
+pub async fn get_all_roles<R: RoleRepository>(repository: R) -> Result<Vec<RoleModel>, RoleError> {
+    match repository.get_all_roles().await {
+        Ok(res) => Ok(res),
+        Err(e) => {
+            println!("Get all roles error: {}", e);
+            Err(RoleError::GetRolesError)
+        }
+    }
 }

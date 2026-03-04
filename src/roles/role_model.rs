@@ -2,7 +2,7 @@ use chrono::{DateTime, Utc};
 use serde::Serialize;
 use uuid::Uuid;
 
-#[derive(sqlx::FromRow, Serialize)]
+#[derive(sqlx::FromRow, Serialize, Clone, PartialEq, Debug)]
 pub struct RoleModel {
     pub id: Uuid,
     pub code: String,
