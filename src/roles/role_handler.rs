@@ -9,7 +9,7 @@ pub async fn get_all(State(pool): State<PgPool>) -> Result<impl IntoResponse, St
     match role_service::get_all_roles(repository).await {
         Ok(res) => Ok(Json(res)),
         Err(e) => {
-            println!("role_handler: get_all error: {}", e);
+            tracing::error!("role_handler: get_all error: {}", e);
             Err(StatusCode::INTERNAL_SERVER_ERROR)
         }
     }

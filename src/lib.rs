@@ -1,18 +1,17 @@
 pub mod roles;
 use sqlx::postgres::PgPool;
 
-use axum::{Router, extract::State, routing::get};
+use axum::{Router, routing::get};
+use tower_http::trace::TraceLayer;
 
 pub fn create_app(pool: PgPool) -> Router {
     Router::new()
         .route("/", get(handler))
         .nest("/roles", roles::role_router::router())
         .with_state(pool)
+        .layer(TraceLayer::new_for_http())
 }
 
-async fn handler(State(pool): State<PgPool>) -> String {
-    sqlx::query_scalar::<_, String>("select 'Hello world!'")
-        .fetch_one(&pool)
-        .await
-        .unwrap()
+async fn handler() -> String {
+    "Hello world!".to_string()
 }

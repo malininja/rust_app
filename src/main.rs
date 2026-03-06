@@ -7,6 +7,7 @@ use std::time::Duration;
 #[tokio::main] // number of logical cores on the machine
 async fn main() {
     let _ = dotenvy::dotenv();
+    tracing_subscriber::fmt::init(); // picks up RUST_LOG if exists. default is 'error'
     let cnn_string = std::env::var("DATABASE_URL").unwrap();
 
     let pool = PgPoolOptions::new()
