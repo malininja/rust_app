@@ -33,7 +33,7 @@ When the user asks for a code review:
 
 ## Feature Documentation
 
-When a conversation involves planning or discussing the implementation of a feature, a documentation file must be created in the `docs/` directory at the end of that discussion.
+When a conversation involves planning or discussing the implementation of a feature, a documentation file must be created in the `features/` directory at the end of that discussion.
 
 - **Naming convention:** `feature_YY-MM-DD-hh-mm.md` using the date and time of the discussion (e.g., `feature_26-02-21-14-30.md`)
 - **Contents:** The file should summarize the feature discussed — its purpose, the approach agreed on, and any key Rust concepts or crates involved.
@@ -43,6 +43,9 @@ When a conversation involves planning or discussing the implementation of a feat
 Established conventions are documented in the `docs/` directory. When reviewing code or giving guidance, flag any code that violates these conventions.
 
 - **SQL conventions:** `docs/sql_conventions.md`
+- **Architecture conventions:** `docs/architecture_conventions.md`
+- **Error handling conventions:** `docs/error_handling_conventions.md`
+- **HTTP conventions:** `docs/http_conventions.md`
 
 ## Evolving Focus
 The user will indicate when they want to focus on a specific Rust concept (e.g. async, error
