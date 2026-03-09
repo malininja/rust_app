@@ -1,4 +1,5 @@
 pub mod roles;
+pub mod users;
 use sqlx::postgres::PgPool;
 
 use axum::{Router, routing::get};
