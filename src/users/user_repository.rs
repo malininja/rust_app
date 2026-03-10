@@ -70,6 +70,27 @@ impl UserRepository for PgUserRepository {
         .await?)
     }
 
+    async fn create_user(
+        &self,
+        role_id: Uuid,
+        username: String,
+        hashed_password: String,
+    ) -> Result<UserModel, Error> {
+        Ok(sqlx::query_as!(
+            UserModel,
+            "
+            INSERT INTO users (role_id, username, password) 
+            VALUES ($1, $2, $3)
+            RETURNING id, role_id, username, password, created_at, updated_at, deleted_at
+            ",
+            role_id,
+            username,
+            hashed_password
+        )
+        .fetch_one(&self.pool)
+        .await?)
+    }
+
     async fn update_user(
         &self,
         id: Uuid,
@@ -93,27 +114,6 @@ impl UserRepository for PgUserRepository {
             id
         )
         .fetch_optional(&self.pool)
-        .await?)
-    }
-
-    async fn create_user(
-        &self,
-        role_id: Uuid,
-        username: String,
-        hashed_password: String,
-    ) -> Result<UserModel, Error> {
-        Ok(sqlx::query_as!(
-            UserModel,
-            "
-            INSERT INTO users (role_id, username, password) 
-            VALUES ($1, $2, $3)
-            RETURNING id, role_id, username, password, created_at, updated_at, deleted_at
-            ",
-            role_id,
-            username,
-            hashed_password
-        )
-        .fetch_one(&self.pool)
         .await?)
     }
 

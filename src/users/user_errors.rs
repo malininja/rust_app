@@ -5,6 +5,9 @@ pub enum UserError {
     #[error("Error getting users from the database")]
     GetUsersError,
 
+    #[error("Error getting user by id from the database")]
+    GetUserByIdError,
+
     #[error("Error inserting user in the database")]
     CreateUserError,
 
@@ -19,4 +22,10 @@ pub enum UserError {
 
     #[error("User already exists in the database")]
     UserAlreadyExists,
+
+    #[error("Soft delete error")]
+    SoftDeleteError,
+
+    #[error("Soft undelete error")]
+    SoftUndeleteError,
 }
