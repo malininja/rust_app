@@ -18,10 +18,14 @@ pub async fn <name>(State(pool): State<PgPool>) -> Result<impl IntoResponse, Sta
 
 | Outcome | Return value |
 |---------|-------------|
-| Success | `Ok(Json(data))` — Serde serializes the payload |
+| Success with body | `Ok(Json(data))` — Serde serializes the payload |
+| Success without body | `Ok(())` — used for delete/undelete operations |
+| Not found | `Err(StatusCode::NOT_FOUND)` — when a specific entity error variant indicates the resource does not exist |
 | Error | `Err(StatusCode::INTERNAL_SERVER_ERROR)` — no response body |
 
 Do not construct custom error response bodies. Error detail goes to the structured log, not the HTTP response.
+
+When matching on service errors, check for specific variants (e.g. `UserNotFound`) before logging — expected business conditions like not found should not be logged as errors.
 
 ## Router Construction
 
