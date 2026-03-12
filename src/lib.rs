@@ -9,6 +9,7 @@ pub fn create_app(pool: PgPool) -> Router {
     Router::new()
         .route("/", get(handler))
         .nest("/roles", roles::role_router::router())
+        .nest("/users", users::user_router::router())
         .with_state(pool)
         .layer(TraceLayer::new_for_http())
 }
