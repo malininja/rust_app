@@ -20,9 +20,6 @@ pub enum UserError {
     #[error("Error creating password hash")]
     PasswordHashError,
 
-    #[error("User already exists in the database")]
-    UserAlreadyExists,
-
     #[error("Soft delete error")]
     SoftDeleteError,
 

@@ -3,7 +3,7 @@ use uuid::Uuid;
 
 use crate::users::user_model::UserModel;
 
-#[derive(Serialize, Clone, Debug)]
+#[derive(Serialize, Clone, Debug, PartialEq)]
 pub struct UserResponseDto {
     pub id: Uuid,
     pub role_id: Uuid,
