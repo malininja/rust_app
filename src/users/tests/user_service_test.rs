@@ -6,8 +6,14 @@ use sqlx::Error;
 use uuid::Uuid;
 
 use crate::users::{
-    dtos::user_response_dto::UserResponseDto, user_errors::UserError, user_model::UserModel,
-    user_repository::UserRepository, user_service,
+    dtos::{
+        user_create_dto::UserCreateDto, user_response_dto::UserResponseDto,
+        user_update_dto::UserUpdateDto,
+    },
+    user_errors::UserError,
+    user_model::UserModel,
+    user_repository::UserRepository,
+    user_service,
 };
 
 fn get_admin_user() -> UserModel {
@@ -232,20 +238,22 @@ async fn create_user_success() {
     let mut repo = MockRepo::new();
     repo.create_user_result = Some(Ok(user.clone()));
 
-    let role_id = Uuid::new_v4();
-    let username = "some username".to_string();
-    let password = "some password".to_string();
+    let user_create_dto = UserCreateDto {
+        role_id: Uuid::new_v4(),
+        username: "some username".to_string(),
+        password: "some password".to_string(),
+    };
 
-    let created = user_service::create_user(&repo, role_id, username.clone(), password.clone())
+    let created = user_service::create_user(&repo, user_create_dto.clone())
         .await
         .unwrap();
 
     let params = repo.captured_create_args.lock().unwrap().take().unwrap();
 
-    assert_eq!(role_id, params.0);
-    assert_eq!(username, params.1);
+    assert_eq!(user_create_dto.role_id, params.0);
+    assert_eq!(user_create_dto.username, params.1);
     assert_ne!(0, params.2.len());
-    assert_ne!(password, params.2);
+    assert_ne!(user_create_dto.password, params.2);
     assert_eq!(UserResponseDto::from(user), created)
 }
 
@@ -254,14 +262,15 @@ async fn create_user_error() {
     let mut repo = MockRepo::new();
     repo.create_user_result = Some(Err(()));
 
-    let created = user_service::create_user(
-        &repo,
-        Uuid::new_v4(),
-        "username".to_string(),
-        "password".to_string(),
-    )
-    .await
-    .unwrap_err();
+    let user_create_dto = UserCreateDto {
+        role_id: Uuid::new_v4(),
+        username: "some username".to_string(),
+        password: "some password".to_string(),
+    };
+
+    let created = user_service::create_user(&repo, user_create_dto)
+        .await
+        .unwrap_err();
 
     assert_eq!(UserError::CreateUserError, created);
 }
@@ -271,9 +280,12 @@ async fn create_user_error() {
 #[tokio::test]
 async fn update_user_success() {
     let id = Uuid::new_v4();
-    let role_id = Some(Uuid::new_v4());
-    let username = Some("some user".to_string());
-    let password = Some("some password".to_string());
+
+    let user_update_dto = UserUpdateDto {
+        role_id: Some(Uuid::new_v4()),
+        username: Some("some user".to_string()),
+        password: Some("some password".to_string()),
+    };
 
     let user_model = get_regular_user();
     let expected = UserResponseDto::from(user_model.clone());
@@ -281,24 +293,30 @@ async fn update_user_success() {
     let mut repo = MockRepo::new();
     repo.update_user_result = Some(Ok(user_model));
 
-    let updated = user_service::update_user(&repo, id, role_id, username.clone(), password.clone())
+    let updated = user_service::update_user(&repo, id, user_update_dto.clone())
         .await
         .unwrap();
 
     let params = repo.captured_update_args.lock().unwrap().take().unwrap();
 
     assert_eq!(id, params.0);
-    assert_eq!(role_id, params.1);
-    assert_eq!(username.unwrap(), params.2.unwrap());
-    assert_ne!(password.unwrap(), params.3.unwrap());
+    assert_eq!(user_update_dto.role_id, params.1);
+    assert_eq!(user_update_dto.username.unwrap(), params.2.unwrap());
+    assert_ne!(user_update_dto.password.unwrap(), params.3.unwrap());
     assert_eq!(expected, updated);
 }
 
 #[tokio::test]
 async fn update_user_does_not_exist() {
+    let user_update_dto = UserUpdateDto {
+        role_id: None,
+        username: None,
+        password: None,
+    };
+
     let repo = MockRepo::new();
 
-    let updated = user_service::update_user(&repo, Uuid::new_v4(), None, None, None)
+    let updated = user_service::update_user(&repo, Uuid::new_v4(), user_update_dto)
         .await
         .unwrap_err();
 
@@ -307,10 +325,16 @@ async fn update_user_does_not_exist() {
 
 #[tokio::test]
 async fn update_user_error() {
+    let user_update_dto = UserUpdateDto {
+        role_id: None,
+        username: None,
+        password: None,
+    };
+
     let mut repo = MockRepo::new();
     repo.update_user_result = Some(Err(()));
 
-    let updated = user_service::update_user(&repo, Uuid::new_v4(), None, None, None)
+    let updated = user_service::update_user(&repo, Uuid::new_v4(), user_update_dto)
         .await
         .unwrap_err();
 

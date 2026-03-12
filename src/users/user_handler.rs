@@ -53,7 +53,7 @@ pub async fn create(
 ) -> Result<impl IntoResponse, StatusCode> {
     let repo = PgUserRepository::new(pool);
 
-    match user_service::create_user(repo, body.role_id, body.username, body.password).await {
+    match user_service::create_user(repo, body).await {
         Ok(res) => Ok(Json(res)),
         Err(e) => {
             tracing::error!("{}: create error: {}", LOG_CONTEXT, e);
@@ -69,7 +69,7 @@ pub async fn update(
 ) -> Result<impl IntoResponse, StatusCode> {
     let repo = PgUserRepository::new(pool);
 
-    match user_service::update_user(repo, id, body.role_id, body.username, body.password).await {
+    match user_service::update_user(repo, id, body).await {
         Ok(res) => Ok(Json(res)),
         Err(e) => {
             if e == UserError::UserNotFound {

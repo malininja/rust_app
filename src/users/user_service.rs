@@ -6,7 +6,11 @@ use argon2::{
 use uuid::Uuid;
 
 use crate::users::{
-    dtos::user_response_dto::UserResponseDto, user_errors::UserError,
+    dtos::{
+        user_create_dto::UserCreateDto, user_response_dto::UserResponseDto,
+        user_update_dto::UserUpdateDto,
+    },
+    user_errors::UserError,
     user_repository::UserRepository,
 };
 
@@ -45,17 +49,15 @@ pub async fn get_user_by_id<R: UserRepository>(
 
 pub async fn create_user<R: UserRepository>(
     repository: R,
-    role_id: Uuid,
-    username: String,
-    password: String,
+    user: UserCreateDto,
 ) -> Result<UserResponseDto, UserError> {
-    let hashed_password = hash_password(password).map_err(|e| {
+    let hashed_password = hash_password(user.password).map_err(|e| {
         tracing::error!("{}: Hash password error: {}", LOG_CONTEXT, e);
         UserError::PasswordHashError
     })?;
 
     match repository
-        .create_user(role_id, username, hashed_password)
+        .create_user(user.role_id, user.username, hashed_password)
         .await
     {
         Ok(user_model) => Ok(user_model.into()),
@@ -69,11 +71,9 @@ pub async fn create_user<R: UserRepository>(
 pub async fn update_user<R: UserRepository>(
     repository: R,
     id: Uuid,
-    role_id: Option<Uuid>,
-    username: Option<String>,
-    password: Option<String>,
+    user: UserUpdateDto,
 ) -> Result<UserResponseDto, UserError> {
-    let hashed_password = password
+    let hashed_password = user.password
         .map(|p| hash_password(p))
         .transpose()
         .map_err(|e| {
@@ -82,7 +82,7 @@ pub async fn update_user<R: UserRepository>(
         })?;
 
     match repository
-        .update_user(id, role_id, username, hashed_password)
+        .update_user(id, user.role_id, user.username, hashed_password)
         .await
     {
         Ok(Some(user_model)) => Ok(UserResponseDto::from(user_model)),
