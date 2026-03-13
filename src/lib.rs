@@ -1,16 +1,23 @@
 pub mod roles;
 pub mod users;
+pub mod auth;
 use sqlx::postgres::PgPool;
 
 use axum::{Router, routing::get};
 use tower_http::trace::TraceLayer;
 
-pub fn create_app(pool: PgPool) -> Router {
+#[derive(Clone)]
+pub struct AppState {
+    pub pool: PgPool,
+    pub jwt_secret: String,
+}
+
+pub fn create_app(app_state: AppState) -> Router {
     Router::new()
         .route("/", get(handler))
         .nest("/roles", roles::role_router::router())
         .nest("/users", users::user_router::router())
-        .with_state(pool)
+        .with_state(app_state)
         .layer(TraceLayer::new_for_http())
 }
 

@@ -4,20 +4,22 @@ use axum::{
     http::status::StatusCode,
     response::IntoResponse,
 };
-use sqlx::PgPool;
 use uuid::Uuid;
 
-use crate::users::{
-    dtos::{user_create_dto::UserCreateDto, user_update_dto::UserUpdateDto},
-    user_errors::UserError,
-    user_repository::PgUserRepository,
-    user_service,
+use crate::{
+    AppState,
+    users::{
+        dtos::{user_create_dto::UserCreateDto, user_update_dto::UserUpdateDto},
+        user_errors::UserError,
+        user_repository::PgUserRepository,
+        user_service,
+    },
 };
 
 const LOG_CONTEXT: &str = "user_handler";
 
-pub async fn get_all(State(pool): State<PgPool>) -> Result<impl IntoResponse, StatusCode> {
-    let repo = PgUserRepository::new(pool);
+pub async fn get_all(State(state): State<AppState>) -> Result<impl IntoResponse, StatusCode> {
+    let repo = PgUserRepository::new(state.pool);
 
     match user_service::get_all_users(repo).await {
         Ok(res) => Ok(Json(res)),
@@ -29,10 +31,10 @@ pub async fn get_all(State(pool): State<PgPool>) -> Result<impl IntoResponse, St
 }
 
 pub async fn get_by_id(
-    State(pool): State<PgPool>,
+    State(state): State<AppState>,
     Path(id): Path<Uuid>,
 ) -> Result<impl IntoResponse, StatusCode> {
-    let repo = PgUserRepository::new(pool);
+    let repo = PgUserRepository::new(state.pool);
 
     match user_service::get_user_by_id(repo, id).await {
         Ok(res) => Ok(Json(res)),
@@ -48,10 +50,10 @@ pub async fn get_by_id(
 }
 
 pub async fn create(
-    State(pool): State<PgPool>,
+    State(state): State<AppState>,
     Json(body): Json<UserCreateDto>,
 ) -> Result<impl IntoResponse, StatusCode> {
-    let repo = PgUserRepository::new(pool);
+    let repo = PgUserRepository::new(state.pool);
 
     match user_service::create_user(repo, body).await {
         Ok(res) => Ok((StatusCode::CREATED, Json(res))),
@@ -63,11 +65,11 @@ pub async fn create(
 }
 
 pub async fn update(
-    State(pool): State<PgPool>,
+    State(state): State<AppState>,
     Path(id): Path<Uuid>,
     Json(body): Json<UserUpdateDto>,
 ) -> Result<impl IntoResponse, StatusCode> {
-    let repo = PgUserRepository::new(pool);
+    let repo = PgUserRepository::new(state.pool);
 
     match user_service::update_user(repo, id, body).await {
         Ok(res) => Ok(Json(res)),
@@ -83,10 +85,10 @@ pub async fn update(
 }
 
 pub async fn delete(
-    State(pool): State<PgPool>,
+    State(state): State<AppState>,
     Path(id): Path<Uuid>,
 ) -> Result<impl IntoResponse, StatusCode> {
-    let repo = PgUserRepository::new(pool);
+    let repo = PgUserRepository::new(state.pool);
 
     match user_service::soft_delete_user(repo, id).await {
         Ok(_) => Ok((StatusCode::NO_CONTENT, ())),
@@ -102,10 +104,10 @@ pub async fn delete(
 }
 
 pub async fn undelete(
-    State(pool): State<PgPool>,
+    State(state): State<AppState>,
     Path(id): Path<Uuid>,
 ) -> Result<impl IntoResponse, StatusCode> {
-    let repo = PgUserRepository::new(pool);
+    let repo = PgUserRepository::new(state.pool);
 
     match user_service::soft_undelete_user(repo, id).await {
         Ok(_) => Ok((StatusCode::NO_CONTENT, ())),

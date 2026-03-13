@@ -2,11 +2,10 @@ use axum::{
     Router,
     routing::{get, patch},
 };
-use sqlx::PgPool;
 
-use crate::users::user_handler::{self, create, get_all, get_by_id, undelete, update};
+use crate::{AppState, users::user_handler::{self, create, get_all, get_by_id, undelete, update}};
 
-pub fn router() -> Router<PgPool> {
+pub fn router() -> Router<AppState> {
     Router::new()
         .route("/", get(get_all).post(create))
         .route(

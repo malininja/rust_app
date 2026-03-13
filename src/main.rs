@@ -1,4 +1,4 @@
-use rust_app::create_app;
+use rust_app::{AppState, create_app};
 use sqlx::postgres::PgPoolOptions;
 use std::time::Duration;
 
@@ -9,6 +9,7 @@ async fn main() {
     let _ = dotenvy::dotenv();
     tracing_subscriber::fmt::init(); // picks up RUST_LOG if exists. default is 'error'
     let cnn_string = std::env::var("DATABASE_URL").unwrap();
+    let jwt_secret = std::env::var("JWT_SECRET").unwrap();
 
     let pool = PgPoolOptions::new()
         .max_connections(5)
@@ -18,5 +19,8 @@ async fn main() {
         .expect("Can't connect database.");
 
     let listener = tokio::net::TcpListener::bind("0.0.0.0:3000").await.unwrap();
-    axum::serve(listener, create_app(pool)).await.unwrap();
+
+    axum::serve(listener, create_app(AppState { pool, jwt_secret }))
+        .await
+        .unwrap();
 }

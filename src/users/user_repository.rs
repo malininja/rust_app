@@ -10,6 +10,8 @@ pub trait UserRepository {
 
     async fn get_user_by_id(&self, id: Uuid) -> Result<Option<UserModel>, Error>;
 
+    async fn get_user_by_username(&self, username: String) -> Result<Option<UserModel>, Error>;
+
     async fn create_user(
         &self,
         role_id: Uuid,
@@ -65,6 +67,21 @@ impl UserRepository for PgUserRepository {
               AND deleted_at IS NULL
             ",
             id
+        )
+        .fetch_optional(&self.pool)
+        .await?)
+    }
+
+    async fn get_user_by_username(&self, username: String) -> Result<Option<UserModel>, Error> {
+        Ok(sqlx::query_as!(
+            UserModel,
+            "
+            SELECT id, role_id, username, password, created_at, updated_at, deleted_at 
+            FROM users 
+            WHERE username=$1
+              AND deleted_at IS NULL
+            ",
+            username
         )
         .fetch_optional(&self.pool)
         .await?)

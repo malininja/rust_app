@@ -103,6 +103,10 @@ impl UserRepository for &MockRepo {
         }
     }
 
+    async fn get_user_by_username(&self, _username: String) -> Result<Option<UserModel>, Error> {
+        Ok(None)
+    }
+
     async fn create_user(
         &self,
         role_id: Uuid,

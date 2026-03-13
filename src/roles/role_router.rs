@@ -1,6 +1,7 @@
 use axum::{Router, routing::get};
-use sqlx::PgPool;
 
-pub fn router() -> Router<PgPool> {
+use crate::AppState;
+
+pub fn router() -> Router<AppState> {
     Router::new().route("/", get(super::role_handler::get_all))
 }

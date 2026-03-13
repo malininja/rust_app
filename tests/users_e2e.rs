@@ -1,16 +1,22 @@
 mod common;
 
 use reqwest::StatusCode;
+use rust_app::AppState;
 use rust_app::users::dtos::user_create_dto::UserCreateDto;
 use rust_app::users::dtos::user_update_dto::UserUpdateDto;
 use rust_app::{roles::role_model::RoleModel, users::dtos::user_response_dto::UserResponseDto};
 use sqlx::PgPool;
 
-use crate::common::{TestApp, create_test_app};
+use crate::common::{TEST_JWT_SECRET, TestApp, create_test_app};
 
 #[sqlx::test]
 async fn test_users_router(pool: PgPool) {
-    let TestApp { base_url, port } = create_test_app(pool).await;
+    let TestApp { base_url, port } = create_test_app(AppState {
+        pool,
+        jwt_secret: TEST_JWT_SECRET.to_string(),
+    })
+    .await;
+
     let reqwest_client = reqwest::Client::new();
 
     let users_url = format!("http://{base_url}:{port}/users");
