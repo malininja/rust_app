@@ -22,6 +22,6 @@ async fn get_all_roles(pool: PgPool) {
         .unwrap();
 
     assert_eq!(body.len(), 2);
-    assert!(body.iter().any(|x| x.code == "A"));
-    assert!(body.iter().any(|x| x.code == "U"));
+    assert!(body.iter().any(|x| x.code == "ADMIN"));
+    assert!(body.iter().any(|x| x.code == "USER"));
 }

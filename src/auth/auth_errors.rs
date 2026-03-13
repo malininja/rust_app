@@ -13,4 +13,10 @@ pub enum AuthError {
 
     #[error("Database error")]
     DatabaseError,
+
+    #[error("Password parse error")]
+    PasswordParseError,
+
+    #[error("Role map error")]
+    RoleMapError,
 }

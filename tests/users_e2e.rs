@@ -30,7 +30,7 @@ async fn test_users_router(pool: PgPool) {
         .await
         .unwrap();
 
-    let admin_role = roles.iter().find(|r| r.code == "A").unwrap();
+    let admin_role = roles.iter().find(|r| r.code == "ADMIN").unwrap();
 
     let user_create_dto = UserCreateDto {
         role_id: admin_role.id,

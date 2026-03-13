@@ -13,6 +13,7 @@ jsonwebtoken = "10.3.0"
 reqwest = { version = "0.13.2", features = ["json"] }
 serde = { version = "1.0.228", features = ["derive"] }
 sqlx = { version = "0.8.6", features = ["postgres", "runtime-tokio", "tls-rustls", "macros", "uuid", "chrono"] }
+strum_macros = "0.28.0"
 thiserror = "2.0.18"
 tokio = { version = "1.49.0", features = ["full", "macros", "rt"] }
 tower-http = { version = "0.6.8", features = ["trace"] }
