@@ -14,7 +14,7 @@ pub trait UserRepository {
 
     async fn create_user(
         &self,
-        role_id: Uuid,
+        role_id: i32,
         username: String,
         hashed_password: String,
     ) -> Result<UserModel, Error>;
@@ -22,7 +22,7 @@ pub trait UserRepository {
     async fn update_user(
         &self,
         id: Uuid,
-        role_id: Option<Uuid>,
+        role_id: Option<i32>,
         username: Option<String>,
         hashed_password: Option<String>,
     ) -> Result<Option<UserModel>, Error>;
@@ -89,7 +89,7 @@ impl UserRepository for PgUserRepository {
 
     async fn create_user(
         &self,
-        role_id: Uuid,
+        role_id: i32,
         username: String,
         hashed_password: String,
     ) -> Result<UserModel, Error> {
@@ -111,7 +111,7 @@ impl UserRepository for PgUserRepository {
     async fn update_user(
         &self,
         id: Uuid,
-        role_id: Option<Uuid>,
+        role_id: Option<i32>,
         username: Option<String>,
         hashed_password: Option<String>,
     ) -> Result<Option<UserModel>, Error> {
@@ -119,9 +119,9 @@ impl UserRepository for PgUserRepository {
             UserModel,
             "
             UPDATE users SET 
-              role_id  = COALESCE($1::uuid, role_id),
-              username = COALESCE($2::varchar, username),
-              password = COALESCE($3::varchar, password)
+              role_id  = COALESCE($1::INTEGER, role_id),
+              username = COALESCE($2::VARCHAR, username),
+              password = COALESCE($3::VARCHAR, password)
             WHERE id = $4 AND deleted_at IS NULL
             RETURNING id, role_id, username, password, created_at, updated_at, deleted_at
             ",

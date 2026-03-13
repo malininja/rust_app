@@ -6,7 +6,7 @@ use crate::users::user_model::UserModel;
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq)]
 pub struct UserResponseDto {
     pub id: Uuid,
-    pub role_id: Uuid,
+    pub role_id: i32,
     pub username: String,
 }
 

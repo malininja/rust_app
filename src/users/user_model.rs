@@ -4,7 +4,7 @@ use uuid::Uuid;
 #[derive(sqlx::FromRow, Clone, PartialEq, Debug)]
 pub struct UserModel {
     pub id: Uuid,
-    pub role_id: Uuid,
+    pub role_id: i32,
     pub username: String,
     pub password: String,
     pub created_at: DateTime<Utc>,

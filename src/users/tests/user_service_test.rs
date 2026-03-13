@@ -19,7 +19,7 @@ use crate::users::{
 fn get_admin_user() -> UserModel {
     UserModel {
         id: Uuid::new_v4(),
-        role_id: Uuid::new_v4(),
+        role_id: 1,
         username: "admin".to_string(),
         password: "some password".to_string(),
         created_at: Utc::now(),
@@ -31,7 +31,7 @@ fn get_admin_user() -> UserModel {
 fn get_regular_user() -> UserModel {
     UserModel {
         id: Uuid::new_v4(),
-        role_id: Uuid::new_v4(),
+        role_id: 2,
         username: "user".to_string(),
         password: "some password".to_string(),
         created_at: Utc::now(),
@@ -43,7 +43,7 @@ fn get_regular_user() -> UserModel {
 fn get_invalid_user() -> UserModel {
     UserModel {
         id: Uuid::new_v4(),
-        role_id: Uuid::new_v4(),
+        role_id: 12345,
         username: "invalid user".to_string(),
         password: "".to_string(),
         created_at: Utc::now(),
@@ -59,8 +59,8 @@ struct MockRepo {
     soft_delete_result: Option<Result<UserModel, ()>>,
     soft_undelete_result: Option<Result<UserModel, ()>>,
     captured_get_by_id_args: Mutex<Option<Uuid>>,
-    captured_create_args: Mutex<Option<(Uuid, String, String)>>,
-    captured_update_args: Mutex<Option<(Uuid, Option<Uuid>, Option<String>, Option<String>)>>,
+    captured_create_args: Mutex<Option<(i32, String, String)>>,
+    captured_update_args: Mutex<Option<(Uuid, Option<i32>, Option<String>, Option<String>)>>,
     captured_soft_delete_args: Mutex<Option<Uuid>>,
     captured_soft_undelete_args: Mutex<Option<Uuid>>,
 }
@@ -109,7 +109,7 @@ impl UserRepository for &MockRepo {
 
     async fn create_user(
         &self,
-        role_id: Uuid,
+        role_id: i32,
         username: String,
         hashed_password: String,
     ) -> Result<UserModel, Error> {
@@ -125,7 +125,7 @@ impl UserRepository for &MockRepo {
     async fn update_user(
         &self,
         id: Uuid,
-        role_id: Option<Uuid>,
+        role_id: Option<i32>,
         username: Option<String>,
         hashed_password: Option<String>,
     ) -> Result<Option<UserModel>, Error> {
@@ -243,7 +243,7 @@ async fn create_user_success() {
     repo.create_user_result = Some(Ok(user.clone()));
 
     let user_create_dto = UserCreateDto {
-        role_id: Uuid::new_v4(),
+        role_id: 1,
         username: "some username".to_string(),
         password: "some password".to_string(),
     };
@@ -267,7 +267,7 @@ async fn create_user_error() {
     repo.create_user_result = Some(Err(()));
 
     let user_create_dto = UserCreateDto {
-        role_id: Uuid::new_v4(),
+        role_id: 1,
         username: "some username".to_string(),
         password: "some password".to_string(),
     };
@@ -286,7 +286,7 @@ async fn update_user_success() {
     let id = Uuid::new_v4();
 
     let user_update_dto = UserUpdateDto {
-        role_id: Some(Uuid::new_v4()),
+        role_id: Some(1),
         username: Some("some user".to_string()),
         password: Some("some password".to_string()),
     };

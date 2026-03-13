@@ -1,7 +1,6 @@
 use async_trait::async_trait;
 use chrono::Utc;
 use sqlx::Error;
-use uuid::Uuid;
 
 use crate::roles::{
     role_error::RoleError, role_model::RoleModel, role_repository::RoleRepository,
@@ -29,14 +28,14 @@ async fn get_all_roles_success() {
 
     let role_model_mocks = vec![
         RoleModel {
-            id: Uuid::new_v4(),
+            id: 1,
             code: String::from("A"),
             name: String::from("mock one"),
             created_at: Utc::now(),
             updated_at: Utc::now(),
         },
         RoleModel {
-            id: Uuid::new_v4(),
+            id: 2,
             code: String::from("B"),
             name: String::from("mock two"),
             created_at: Utc::now(),

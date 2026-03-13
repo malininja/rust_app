@@ -1,10 +1,9 @@
 use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
-use uuid::Uuid;
 
 #[derive(sqlx::FromRow, Serialize, Clone, PartialEq, Debug, Deserialize)]
 pub struct RoleModel {
-    pub id: Uuid,
+    pub id: i32,
     pub code: String,
     pub name: String,
     pub created_at: DateTime<Utc>,
