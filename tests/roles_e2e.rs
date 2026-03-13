@@ -1,27 +1,13 @@
-use std::time::Duration;
+mod common;
 
-use rust_app::{create_app, roles::role_model::RoleModel};
-use sqlx::postgres::PgPoolOptions;
+use rust_app::roles::role_model::RoleModel;
+use sqlx::PgPool;
 
-#[tokio::test]
-async fn get_all_roles() {
-    let base_url = "127.0.0.1";
-    let _ = dotenvy::dotenv();
-    let cnn_string = std::env::var("DATABASE_URL").unwrap();
+use crate::common::{TestApp, create_test_app};
 
-    let pool = PgPoolOptions::new()
-        .max_connections(5)
-        .acquire_timeout(Duration::from_secs(3))
-        .connect(&cnn_string)
-        .await
-        .expect("Can't connect database.");
-
-    let app = create_app(pool);
-    let listener = tokio::net::TcpListener::bind(format!("{base_url}:0"))
-        .await
-        .unwrap();
-    let port = listener.local_addr().unwrap().port();
-    tokio::spawn(axum::serve(listener, app).into_future());
+#[sqlx::test]
+async fn get_all_roles(pool: PgPool) {
+    let TestApp { base_url, port } = create_test_app(pool).await;
 
     let roles_url = format!("http://{base_url}:{port}/roles");
     let body = reqwest::get(roles_url)

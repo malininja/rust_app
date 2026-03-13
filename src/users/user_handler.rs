@@ -54,7 +54,7 @@ pub async fn create(
     let repo = PgUserRepository::new(pool);
 
     match user_service::create_user(repo, body).await {
-        Ok(res) => Ok(Json(res)),
+        Ok(res) => Ok((StatusCode::CREATED, Json(res))),
         Err(e) => {
             tracing::error!("{}: create error: {}", LOG_CONTEXT, e);
             Err(StatusCode::INTERNAL_SERVER_ERROR)
@@ -89,7 +89,7 @@ pub async fn delete(
     let repo = PgUserRepository::new(pool);
 
     match user_service::soft_delete_user(repo, id).await {
-        Ok(_) => Ok(()),
+        Ok(_) => Ok((StatusCode::NO_CONTENT, ())),
         Err(e) => {
             if e == UserError::UserNotFound {
                 return Err(StatusCode::NOT_FOUND);
@@ -108,7 +108,7 @@ pub async fn undelete(
     let repo = PgUserRepository::new(pool);
 
     match user_service::soft_undelete_user(repo, id).await {
-        Ok(_) => Ok(()),
+        Ok(_) => Ok((StatusCode::NO_CONTENT, ())),
         Err(e) => {
             if e == UserError::UserNotFound {
                 return Err(StatusCode::NOT_FOUND);

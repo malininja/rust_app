@@ -18,8 +18,9 @@ pub async fn <name>(State(pool): State<PgPool>) -> Result<impl IntoResponse, Sta
 
 | Outcome | Return value |
 |---------|-------------|
-| Success with body | `Ok(Json(data))` — Serde serializes the payload |
-| Success without body | `Ok(())` — used for delete/undelete operations |
+| Success with body (200) | `Ok(Json(data))` — Serde serializes the payload |
+| Created (201) | `Ok((StatusCode::CREATED, Json(data)))` — used for POST/create operations |
+| Success without body (204) | `Ok((StatusCode::NO_CONTENT, ()))` — used for delete/undelete operations |
 | Not found | `Err(StatusCode::NOT_FOUND)` — when a specific entity error variant indicates the resource does not exist |
 | Error | `Err(StatusCode::INTERNAL_SERVER_ERROR)` — no response body |
 
