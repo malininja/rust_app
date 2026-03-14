@@ -3,7 +3,7 @@
 CREATE TABLE users (
   id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
   role_id INTEGER NOT NULL REFERENCES roles(id),
-  username VARCHAR(20) NOT NULL,
+  username VARCHAR(20) NOT NULL UNIQUE,
   password VARCHAR(200) NOT NULL,
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
   updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
