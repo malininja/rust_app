@@ -1,9 +1,9 @@
 pub mod dtos;
-pub mod user_errors;
-pub mod user_model;
-pub mod user_repository;
-pub mod user_service;
-pub mod user_handler;
-pub mod user_router;
 #[cfg(test)]
 mod tests;
+pub mod user_errors;
+pub mod user_handler;
+pub mod user_model;
+pub mod user_repository;
+pub mod user_router;
+pub mod user_service;

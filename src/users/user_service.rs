@@ -73,13 +73,10 @@ pub async fn update_user<R: UserRepository>(
     id: Uuid,
     user: UserUpdateDto,
 ) -> Result<UserResponseDto, UserError> {
-    let hashed_password = user.password
-        .map(hash_password)
-        .transpose()
-        .map_err(|e| {
-            tracing::error!("{}: Hash password error: {}", LOG_CONTEXT, e);
-            UserError::PasswordHashError
-        })?;
+    let hashed_password = user.password.map(hash_password).transpose().map_err(|e| {
+        tracing::error!("{}: Hash password error: {}", LOG_CONTEXT, e);
+        UserError::PasswordHashError
+    })?;
 
     match repository
         .update_user(id, user.role_id, user.username, hashed_password)

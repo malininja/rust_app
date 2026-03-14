@@ -5,11 +5,11 @@
 All handlers are async functions with this signature:
 
 ```
-pub async fn <name>(State(pool): State<PgPool>) -> Result<impl IntoResponse, StatusCode>
+pub async fn <name>(State(state): State<AppState>) -> Result<impl IntoResponse, StatusCode>
 ```
 
-- State is extracted via `State(pool): State<PgPool>`.
-- The pool is passed directly to the repository constructor — it is not stored on a custom app state struct.
+- State is extracted via `State(state): State<AppState>`.
+- The pool and any other shared state is accessed via fields on `AppState`.
 - Return type is always `Result<impl IntoResponse, StatusCode>`.
 
 **Reference:** `src/roles/role_handler.rs`
@@ -54,7 +54,7 @@ Router::new()
     .layer(TraceLayer::new_for_http())
 ```
 
-- `.with_state(pool)` is called once on the root router.
+- `.with_state(app_state)` is called once on the root router with an `AppState` instance.
 - `TraceLayer::new_for_http()` from `tower-http` provides automatic request/response logging — do not add manual request logging in handlers.
 
 **Reference:** `src/lib.rs`

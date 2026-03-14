@@ -3,7 +3,10 @@ use axum::{
     routing::{get, patch},
 };
 
-use crate::{AppState, users::user_handler::{self, create, get_all, get_by_id, undelete, update}};
+use crate::{
+    AppState,
+    users::user_handler::{self, create, get_all, get_by_id, undelete, update},
+};
 
 pub fn router() -> Router<AppState> {
     Router::new()

@@ -23,7 +23,7 @@ pub async fn login<R: UserRepository>(
             tracing::error!("{}: login error fetching user from db: {}", LOG_CONTEXT, e);
             AuthError::DatabaseError
         })?
-        .ok_or( AuthError::UserNotFound)?;
+        .ok_or(AuthError::UserNotFound)?;
 
     let password_hash = PasswordHash::new(&user.password).map_err(|e| {
         tracing::error!("{}: login error parsing password: {}", LOG_CONTEXT, e);
