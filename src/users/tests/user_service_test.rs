@@ -1,8 +1,4 @@
-use std::sync::Mutex;
-
-use async_trait::async_trait;
 use chrono::Utc;
-use sqlx::Error;
 use uuid::Uuid;
 
 use crate::users::{
@@ -10,9 +6,9 @@ use crate::users::{
         user_create_dto::UserCreateDto, user_response_dto::UserResponseDto,
         user_update_dto::UserUpdateDto,
     },
+    tests::user_mock_repository::UserMockRepo,
     user_errors::UserError,
     user_model::UserModel,
-    user_repository::UserRepository,
     user_service,
 };
 
@@ -40,125 +36,6 @@ fn get_regular_user() -> UserModel {
     }
 }
 
-fn get_invalid_user() -> UserModel {
-    UserModel {
-        id: Uuid::new_v4(),
-        role_id: 12345,
-        username: "invalid user".to_string(),
-        password: "".to_string(),
-        created_at: Utc::now(),
-        updated_at: Utc::now(),
-        deleted_at: Some(Utc::now()),
-    }
-}
-struct MockRepo {
-    get_all_result: Option<Result<Vec<UserModel>, ()>>,
-    get_by_id_result: Option<Result<UserModel, ()>>,
-    create_user_result: Option<Result<UserModel, ()>>,
-    update_user_result: Option<Result<UserModel, ()>>,
-    soft_delete_result: Option<Result<UserModel, ()>>,
-    soft_undelete_result: Option<Result<UserModel, ()>>,
-    captured_get_by_id_args: Mutex<Option<Uuid>>,
-    captured_create_args: Mutex<Option<(i32, String, String)>>,
-    captured_update_args: Mutex<Option<(Uuid, Option<i32>, Option<String>, Option<String>)>>,
-    captured_soft_delete_args: Mutex<Option<Uuid>>,
-    captured_soft_undelete_args: Mutex<Option<Uuid>>,
-}
-
-impl MockRepo {
-    fn new() -> Self {
-        Self {
-            get_all_result: None,
-            get_by_id_result: None,
-            create_user_result: None,
-            update_user_result: None,
-            soft_delete_result: None,
-            soft_undelete_result: None,
-            captured_get_by_id_args: None.into(),
-            captured_create_args: None.into(),
-            captured_update_args: None.into(),
-            captured_soft_delete_args: None.into(),
-            captured_soft_undelete_args: None.into(),
-        }
-    }
-}
-
-#[async_trait]
-impl UserRepository for &MockRepo {
-    async fn get_all_users(&self) -> Result<Vec<UserModel>, Error> {
-        match &self.get_all_result {
-            Some(Ok(res)) => Ok(res.clone()),
-            Some(Err(())) => Err(Error::RowNotFound),
-            None => Ok(vec![get_invalid_user()]),
-        }
-    }
-
-    async fn get_user_by_id(&self, id: Uuid) -> Result<Option<UserModel>, Error> {
-        *self.captured_get_by_id_args.lock().unwrap() = Some(id);
-
-        match &self.get_by_id_result {
-            Some(Ok(res)) => Ok(Some(res.clone())),
-            Some(Err(())) => Err(Error::RowNotFound),
-            None => Ok(None),
-        }
-    }
-
-    async fn get_user_by_username(&self, _username: String) -> Result<Option<UserModel>, Error> {
-        Ok(None)
-    }
-
-    async fn create_user(
-        &self,
-        role_id: i32,
-        username: String,
-        hashed_password: String,
-    ) -> Result<UserModel, Error> {
-        *self.captured_create_args.lock().unwrap() = Some((role_id, username, hashed_password));
-
-        match &self.create_user_result {
-            Some(Ok(res)) => Ok(res.clone()),
-            Some(Err(())) => Err(Error::RowNotFound),
-            None => Ok(get_invalid_user()),
-        }
-    }
-
-    async fn update_user(
-        &self,
-        id: Uuid,
-        role_id: Option<i32>,
-        username: Option<String>,
-        hashed_password: Option<String>,
-    ) -> Result<Option<UserModel>, Error> {
-        *self.captured_update_args.lock().unwrap() = Some((id, role_id, username, hashed_password));
-
-        match &self.update_user_result {
-            Some(Ok(res)) => Ok(Some(res.clone())),
-            Some(Err(())) => Err(Error::RowNotFound),
-            None => Ok(None),
-        }
-    }
-
-    async fn soft_delete_user(&self, id: Uuid) -> Result<Option<UserModel>, Error> {
-        *self.captured_soft_delete_args.lock().unwrap() = Some(id);
-
-        match &self.soft_delete_result {
-            Some(Ok(res)) => Ok(Some(res.clone())),
-            Some(Err(())) => Err(Error::RowNotFound),
-            None => Ok(None),
-        }
-    }
-
-    async fn soft_undelete_user(&self, id: Uuid) -> Result<Option<UserModel>, Error> {
-        *self.captured_soft_undelete_args.lock().unwrap() = Some(id);
-
-        match &self.soft_undelete_result {
-            Some(Ok(res)) => Ok(Some(res.clone())),
-            Some(Err(())) => Err(Error::RowNotFound),
-            None => Ok(None),
-        }
-    }
-}
-
 //################### get_all_users
 
 #[tokio::test]
@@ -170,7 +47,7 @@ async fn get_all_users_success() {
         .map(|um| um.into())
         .collect();
 
-    let mut repo = MockRepo::new();
+    let mut repo = UserMockRepo::new();
     repo.get_all_result = Some(Ok(user_models_mock));
 
     let fetched_data = user_service::get_all_users(&repo).await.unwrap();
@@ -180,7 +57,7 @@ async fn get_all_users_success() {
 
 #[tokio::test]
 async fn get_all_users_error() {
-    let mut repo = MockRepo::new();
+    let mut repo = UserMockRepo::new();
     repo.get_all_result = Some(Err(()));
 
     let fetched = user_service::get_all_users(&repo).await.err().unwrap();
@@ -195,7 +72,7 @@ async fn get_user_by_id_success() {
     let user_model_mock = get_admin_user();
     let expected = UserResponseDto::from(user_model_mock.clone());
 
-    let mut repo = MockRepo::new();
+    let mut repo = UserMockRepo::new();
     repo.get_by_id_result = Some(Ok(user_model_mock));
 
     let id = Uuid::new_v4();
@@ -210,7 +87,7 @@ async fn get_user_by_id_success() {
 
 #[tokio::test]
 async fn get_user_by_id_error() {
-    let mut repo = MockRepo::new();
+    let mut repo = UserMockRepo::new();
     repo.get_by_id_result = Some(Err(()));
 
     let fetched = user_service::get_user_by_id(&repo, Uuid::new_v4())
@@ -223,7 +100,7 @@ async fn get_user_by_id_error() {
 
 #[tokio::test]
 async fn get_user_by_id_does_not_exist() {
-    let repo = MockRepo::new();
+    let repo = UserMockRepo::new();
 
     let fetched = user_service::get_user_by_id(&repo, Uuid::new_v4())
         .await
@@ -239,7 +116,7 @@ async fn get_user_by_id_does_not_exist() {
 async fn create_user_success() {
     let user = get_regular_user();
 
-    let mut repo = MockRepo::new();
+    let mut repo = UserMockRepo::new();
     repo.create_user_result = Some(Ok(user.clone()));
 
     let user_create_dto = UserCreateDto {
@@ -263,7 +140,7 @@ async fn create_user_success() {
 
 #[tokio::test]
 async fn create_user_error() {
-    let mut repo = MockRepo::new();
+    let mut repo = UserMockRepo::new();
     repo.create_user_result = Some(Err(()));
 
     let user_create_dto = UserCreateDto {
@@ -294,7 +171,7 @@ async fn update_user_success() {
     let user_model = get_regular_user();
     let expected = UserResponseDto::from(user_model.clone());
 
-    let mut repo = MockRepo::new();
+    let mut repo = UserMockRepo::new();
     repo.update_user_result = Some(Ok(user_model));
 
     let updated = user_service::update_user(&repo, id, user_update_dto.clone())
@@ -318,7 +195,7 @@ async fn update_user_does_not_exist() {
         password: None,
     };
 
-    let repo = MockRepo::new();
+    let repo = UserMockRepo::new();
 
     let updated = user_service::update_user(&repo, Uuid::new_v4(), user_update_dto)
         .await
@@ -335,7 +212,7 @@ async fn update_user_error() {
         password: None,
     };
 
-    let mut repo = MockRepo::new();
+    let mut repo = UserMockRepo::new();
     repo.update_user_result = Some(Err(()));
 
     let updated = user_service::update_user(&repo, Uuid::new_v4(), user_update_dto)
@@ -349,7 +226,7 @@ async fn update_user_error() {
 
 #[tokio::test]
 async fn soft_delete_success() {
-    let mut repo = MockRepo::new();
+    let mut repo = UserMockRepo::new();
     repo.soft_delete_result = Some(Ok(get_admin_user()));
 
     let id = Uuid::new_v4();
@@ -364,7 +241,7 @@ async fn soft_delete_success() {
 
 #[tokio::test]
 async fn soft_delete_error() {
-    let mut repo = MockRepo::new();
+    let mut repo = UserMockRepo::new();
     repo.soft_delete_result = Some(Err(()));
 
     let fetched = user_service::soft_delete_user(&repo, Uuid::new_v4())
@@ -377,7 +254,7 @@ async fn soft_delete_error() {
 
 #[tokio::test]
 async fn soft_delete_does_not_exist() {
-    let repo = MockRepo::new();
+    let repo = UserMockRepo::new();
 
     let fetched = user_service::soft_delete_user(&repo, Uuid::new_v4())
         .await
@@ -391,7 +268,7 @@ async fn soft_delete_does_not_exist() {
 
 #[tokio::test]
 async fn soft_undelete_success() {
-    let mut repo = MockRepo::new();
+    let mut repo = UserMockRepo::new();
     repo.soft_undelete_result = Some(Ok(get_admin_user()));
 
     let id = Uuid::new_v4();
@@ -406,7 +283,7 @@ async fn soft_undelete_success() {
 
 #[tokio::test]
 async fn soft_undelete_error() {
-    let mut repo = MockRepo::new();
+    let mut repo = UserMockRepo::new();
     repo.soft_undelete_result = Some(Err(()));
 
     let fetched = user_service::soft_undelete_user(&repo, Uuid::new_v4())
@@ -419,7 +296,7 @@ async fn soft_undelete_error() {
 
 #[tokio::test]
 async fn soft_undelete_does_not_exist() {
-    let repo = MockRepo::new();
+    let repo = UserMockRepo::new();
 
     let fetched = user_service::soft_undelete_user(&repo, Uuid::new_v4())
         .await

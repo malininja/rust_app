@@ -1,6 +1,6 @@
 pub mod dtos;
 #[cfg(test)]
-mod tests;
+pub mod tests;
 pub mod user_errors;
 pub mod user_handler;
 pub mod user_model;
