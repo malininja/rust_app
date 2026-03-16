@@ -1,4 +1,9 @@
-use rust_app::{AppState, create_app};
+use rust_app::{
+    AppState,
+    auth::dtos::{login_request_dto::LoginRequestDto, login_response_dto::LoginResponseDto},
+    create_app,
+};
+use sqlx::PgPool;
 
 pub const TEST_JWT_SECRET: &str = "long_random_string";
 
@@ -8,6 +13,8 @@ pub struct TestApp {
 }
 
 pub async fn create_test_app(state: AppState) -> TestApp {
+    insert_admin_user(&state.pool).await;
+
     let base_url = "127.0.0.1".to_string();
 
     let app = create_app(state);
@@ -18,4 +25,36 @@ pub async fn create_test_app(state: AppState) -> TestApp {
     tokio::spawn(axum::serve(listener, app).into_future());
 
     TestApp { base_url, port }
+}
+
+async fn insert_admin_user(pool: &PgPool) {
+    let _ = sqlx::query!("
+        INSERT INTO users 
+        (role_id, username, password) 
+        VALUES (1, 'admin', '$argon2id$v=19$m=19456,t=2,p=1$dKfeZ4YkSzZg8+8ee7aB/w$grQunmZPhwcYgd50jG3LTYE8TNVc1oJBLDp6VUS18xU') 
+        ON CONFLICT DO NOTHING
+    ").execute(pool).await;
+}
+
+pub async fn get_admin_token(app: &TestApp) -> String {
+    let TestApp { base_url, port } = app;
+
+    let reqwest_client = reqwest::Client::new();
+
+    let login_dto = LoginRequestDto {
+        username: "admin".to_string(),
+        password: "123456".to_string(),
+    };
+
+    let auth_res = reqwest_client
+        .post(format!("http://{base_url}:{port}/login"))
+        .json(&login_dto)
+        .send()
+        .await
+        .unwrap()
+        .json::<LoginResponseDto>()
+        .await
+        .unwrap();
+
+    auth_res.token
 }

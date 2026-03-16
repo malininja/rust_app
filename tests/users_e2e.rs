@@ -7,23 +7,28 @@ use rust_app::users::dtos::user_update_dto::UserUpdateDto;
 use rust_app::{roles::role_model::RoleModel, users::dtos::user_response_dto::UserResponseDto};
 use sqlx::PgPool;
 
-use crate::common::{TEST_JWT_SECRET, TestApp, create_test_app};
+use crate::common::{TEST_JWT_SECRET, create_test_app, get_admin_token};
 
 #[sqlx::test]
 async fn test_users_router(pool: PgPool) {
-    let TestApp { base_url, port } = create_test_app(AppState {
+    let test_app = create_test_app(AppState {
         pool,
         jwt_secret: TEST_JWT_SECRET.to_string(),
     })
     .await;
 
+    let token = get_admin_token(&test_app).await;
+
     let reqwest_client = reqwest::Client::new();
 
-    let users_url = format!("http://{base_url}:{port}/users");
+    let users_url = format!("http://{}:{}/users", test_app.base_url, test_app.port);
 
     //############# CREATE
-    let roles_url = format!("http://{base_url}:{port}/roles");
-    let roles = reqwest::get(roles_url)
+    let roles_url = format!("http://{}:{}/roles", test_app.base_url, test_app.port);
+    let roles = reqwest_client
+        .get(roles_url)
+        .header("Authorization", format!("Bearer {}", token))
+        .send()
         .await
         .unwrap()
         .json::<Vec<RoleModel>>()
@@ -40,6 +45,7 @@ async fn test_users_router(pool: PgPool) {
 
     let created_user_response = reqwest_client
         .post(&users_url)
+        .header("Authorization", format!("Bearer {}", token))
         .json(&user_create_dto)
         .send()
         .await
@@ -58,6 +64,7 @@ async fn test_users_router(pool: PgPool) {
     //############# GET ALL
     let fetched_users = reqwest_client
         .get(&users_url)
+        .header("Authorization", format!("Bearer {}", token))
         .send()
         .await
         .unwrap()
@@ -70,6 +77,7 @@ async fn test_users_router(pool: PgPool) {
     //############# GET BY ID
     let fetched_user = reqwest_client
         .get(format!("{}/{}", users_url, created_user.id))
+        .header("Authorization", format!("Bearer {}", token))
         .send()
         .await
         .unwrap()
@@ -88,6 +96,7 @@ async fn test_users_router(pool: PgPool) {
 
     let _updated_user = reqwest_client
         .patch(format!("{}/{}", users_url, created_user.id))
+        .header("Authorization", format!("Bearer {}", token))
         .json(&user_update_dto)
         .send()
         .await
@@ -98,6 +107,7 @@ async fn test_users_router(pool: PgPool) {
 
     let fetched_updated_user = reqwest_client
         .get(format!("{}/{}", users_url, created_user.id))
+        .header("Authorization", format!("Bearer {}", token))
         .send()
         .await
         .unwrap()
@@ -117,6 +127,7 @@ async fn test_users_router(pool: PgPool) {
 
     let delete_response = reqwest_client
         .delete(format!("{}/{}", users_url, created_user.id))
+        .header("Authorization", format!("Bearer {}", token))
         .json(&user_update_dto)
         .send()
         .await
@@ -126,6 +137,7 @@ async fn test_users_router(pool: PgPool) {
 
     let fetch_deleted_response = reqwest_client
         .get(format!("{}/{}", users_url, created_user.id))
+        .header("Authorization", format!("Bearer {}", token))
         .send()
         .await
         .unwrap();
@@ -135,6 +147,7 @@ async fn test_users_router(pool: PgPool) {
     //############# UNDELETE
     let undelete_user_response = reqwest_client
         .patch(format!("{}/{}/undelete", users_url, created_user.id))
+        .header("Authorization", format!("Bearer {}", token))
         .json(&user_update_dto)
         .send()
         .await
@@ -144,6 +157,7 @@ async fn test_users_router(pool: PgPool) {
 
     let fetched_undeleted_user = reqwest_client
         .get(format!("{}/{}", users_url, created_user.id))
+        .header("Authorization", format!("Bearer {}", token))
         .send()
         .await
         .unwrap()
