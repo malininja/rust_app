@@ -6,6 +6,8 @@ use rust_app::{
 use sqlx::PgPool;
 
 pub const TEST_JWT_SECRET: &str = "long_random_string";
+pub const ADMIN_USERNAME: &str = "admin";
+pub const ADMIN_PASSWORD: &str = "123456";
 
 pub struct TestApp {
     pub base_url: String,
@@ -36,14 +38,15 @@ async fn insert_admin_user(pool: &PgPool) {
     ").execute(pool).await;
 }
 
+#[allow(dead_code)] // not use in some tests
 pub async fn get_admin_token(app: &TestApp) -> String {
     let TestApp { base_url, port } = app;
 
     let reqwest_client = reqwest::Client::new();
 
     let login_dto = LoginRequestDto {
-        username: "admin".to_string(),
-        password: "123456".to_string(),
+        username: ADMIN_USERNAME.to_string(),
+        password: ADMIN_PASSWORD.to_string(),
     };
 
     let auth_res = reqwest_client
