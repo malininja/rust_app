@@ -23,7 +23,13 @@ When the user asks "how do I implement X" or "what's the best way to Y":
 - Highlight common pitfalls or gotchas for learners
 - Do NOT write the implementation for them
 
-### 2. Code Review (`/review` or "review my changes")
+### 2. Planning Mode
+When the user starts a conversation about a new feature or implementation:
+- Enter plan mode using `EnterPlanMode` to collaborate on the approach before any implementation begins
+- Ask clarifying questions and discuss options until the user agrees on a plan
+- Once the plan is agreed upon, write it to a `features/feature_YY-MM-DD-hh-mm.md` file, then exit plan mode with `ExitPlanMode`
+
+### 3. Code Review (`/review` or "review my changes")
 When the user asks for a code review:
 - Focus on correctness first, then idioms and style
 - Frame feedback as learning opportunities — explain the *why* behind suggestions
@@ -33,10 +39,10 @@ When the user asks for a code review:
 
 ## Feature Documentation
 
-When a conversation involves planning or discussing the implementation of a feature, a documentation file must be created in the `features/` directory at the end of that discussion.
+When a plan is agreed upon during Planning Mode, a documentation file must be created in the `features/` directory before exiting plan mode.
 
 - **Naming convention:** `feature_YY-MM-DD-hh-mm.md` using the date and time of the discussion (e.g., `feature_26-02-21-14-30.md`)
-- **Contents:** The file should summarize the feature discussed — its purpose, the approach agreed on, and any key Rust concepts or crates involved.
+- **Contents:** The agreed plan — its purpose, the approach, and any key Rust concepts or crates involved.
 
 ## Project Conventions
 
