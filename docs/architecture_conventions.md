@@ -20,8 +20,9 @@ Each layer lives in its own file, named `<entity>_<layer>.rs`:
 | `<entity>_handler.rs` | HTTP handler functions; calls service, maps errors to status codes |
 | `<entity>_router.rs` | Wires routes to handlers; returns `Router<PgPool>` |
 | `<entity>_error.rs` | Domain error enum using `thiserror` |
+| `dtos/` | Optional subdirectory for request/response DTOs when there are multiple DTO types (create, update, response, etc.) |
 
-**Reference:** `src/roles/` — canonical example of this structure.
+**Reference:** `src/roles/` — canonical example of the base structure. `src/articles/` — example with a `dtos/` subdirectory.
 
 ## `mod.rs` Structure
 
