@@ -7,10 +7,14 @@ use axum::{
 
 use crate::{AppState, auth::claims::Claims, roles::role_model::Role};
 
-pub async fn auth_admin(State(state): State<AppState>, request: Request, next: Next) -> Response {
+pub async fn auth_admin(
+    State(app_state): State<AppState>,
+    request: Request,
+    next: Next,
+) -> Response {
     let (mut parts, body) = request.into_parts();
 
-    let claims = match Claims::from_request_parts(&mut parts, &state).await {
+    let claims = match Claims::from_request_parts(&mut parts, &app_state).await {
         Ok(claims) => claims,
         Err(status_code) => return status_code.into_response(),
     };
@@ -18,6 +22,21 @@ pub async fn auth_admin(State(state): State<AppState>, request: Request, next: N
     if claims.role != Role::Admin.to_string() {
         return StatusCode::FORBIDDEN.into_response();
     }
+
+    next.run(Request::from_parts(parts, body)).await
+}
+
+pub async fn logged_in(
+    State(app_state): State<AppState>,
+    request: Request,
+    next: Next,
+) -> Response {
+    let (mut parts, body) = request.into_parts();
+
+    let _ = match Claims::from_request_parts(&mut parts, &app_state).await {
+        Ok(c) => c,
+        Err(status_code) => return status_code.into_response(),
+    };
 
     next.run(Request::from_parts(parts, body)).await
 }

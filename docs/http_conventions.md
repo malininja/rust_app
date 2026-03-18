@@ -30,32 +30,39 @@ When matching on service errors, check for specific variants (e.g. `UserNotFound
 
 ## Router Construction
 
-Each feature module exposes a `router()` function that returns `Router<PgPool>`:
+Each feature module exposes a `router(app_state: AppState)` function that returns `Router<AppState>`:
 
 ```
-pub fn router() -> Router<PgPool> {
-    Router::new().route("/", get(super::<entity>_handler::<handler>))
+pub fn router(app_state: AppState) -> Router<AppState> {
+    Router::new()
+        .route("/", get(super::<entity>_handler::<handler>))
+        .layer(from_fn_with_state(app_state.clone(), <middleware>))
 }
 ```
 
-Feature routers are registered in `lib.rs` via `.nest(prefix, <module>::<entity>_router::router())`.
+- Middleware is applied per-router using `from_fn_with_state`, giving fine-grained control over which routes are protected and by which middleware.
+- `AppState` is passed in so the router can bind middleware that requires access to shared state (e.g. JWT secret for auth).
 
-**Reference:** `src/roles/role_router.rs`
+Feature routers are registered in `lib.rs` via `.nest(prefix, <module>::<entity>_router::router(app_state.clone()))`.
+
+**Reference:** `src/roles/role_router.rs`, `src/articles/article_router.rs`
 
 ## App Setup (`lib.rs`)
 
-State and middleware are bound once at the top level:
+State is bound once at the top level; middleware is applied per-router, not globally:
 
 ```
 Router::new()
-    .nest("/prefix", module::entity_router::router())
+    .nest("/prefix", module::entity_router::router(app_state.clone()))
     // ...additional routes...
-    .with_state(pool)
+    .route("/", get(handler))
+    .with_state(app_state)
     .layer(TraceLayer::new_for_http())
 ```
 
-- `.with_state(app_state)` is called once on the root router with an `AppState` instance.
+- `.with_state(app_state)` is called once on the root router.
 - `TraceLayer::new_for_http()` from `tower-http` provides automatic request/response logging — do not add manual request logging in handlers.
+- Do not apply auth middleware globally at the root level; use per-router layers instead.
 
 **Reference:** `src/lib.rs`
 
