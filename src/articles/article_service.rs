@@ -1,8 +1,12 @@
 use uuid::Uuid;
 
 use crate::articles::{
-    article_error::ArticleError, article_model::UnitOfMeasure,
-    article_repository::ArticleRepository, dtos::article_response_dto::ArticleResponseDto,
+    article_error::ArticleError,
+    article_repository::ArticleRepository,
+    dtos::{
+        article_create_dto::ArticleCreateDto, article_response_dto::ArticleResponseDto,
+        article_update_dto::ArticleUpdateDto,
+    },
 };
 
 const LOG_CONTEXT: &str = "article_service";
@@ -11,10 +15,7 @@ pub async fn get_all_articles<R: ArticleRepository>(
     repo: R,
 ) -> Result<Vec<ArticleResponseDto>, ArticleError> {
     match repo.get_all_articles().await {
-        Ok(articles) => Ok(articles
-            .into_iter()
-            .map(ArticleResponseDto::from)
-            .collect()),
+        Ok(articles) => Ok(articles.into_iter().map(ArticleResponseDto::from).collect()),
         Err(e) => {
             tracing::error!("{}: get_all_article error: {}", LOG_CONTEXT, e);
             Err(ArticleError::GetArticlesError)
@@ -38,9 +39,13 @@ pub async fn get_article_by_id<R: ArticleRepository>(
 
 pub async fn create_article<R: ArticleRepository>(
     repo: R,
-    name: String,
-    unit_of_measure: UnitOfMeasure,
+    article_create_dto: ArticleCreateDto,
 ) -> Result<ArticleResponseDto, ArticleError> {
+    let ArticleCreateDto {
+        name,
+        unit_of_measure,
+    } = article_create_dto;
+
     match repo.create_article(name, unit_of_measure).await {
         Ok(article) => Ok(ArticleResponseDto::from(article)),
         Err(e) => {
@@ -53,9 +58,13 @@ pub async fn create_article<R: ArticleRepository>(
 pub async fn update_article<R: ArticleRepository>(
     repo: R,
     id: Uuid,
-    name: Option<String>,
-    unit_of_measure: Option<UnitOfMeasure>,
+    article_update_dto: ArticleUpdateDto,
 ) -> Result<ArticleResponseDto, ArticleError> {
+    let ArticleUpdateDto {
+        name,
+        unit_of_measure,
+    } = article_update_dto;
+
     match repo.update_article(id, name, unit_of_measure).await {
         Ok(Some(article)) => Ok(ArticleResponseDto::from(article)),
         Ok(None) => Err(ArticleError::ArticleNotFoundError),

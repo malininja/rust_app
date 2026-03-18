@@ -2,7 +2,7 @@ use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
-#[derive(sqlx::Type, Serialize, Deserialize, Debug, PartialEq)]
+#[derive(sqlx::Type, Serialize, Deserialize, Clone, Debug, PartialEq)]
 #[sqlx(type_name = "unit_of_measure", rename_all = "lowercase")]
 pub enum UnitOfMeasure {
     Piece,
@@ -11,7 +11,7 @@ pub enum UnitOfMeasure {
     Metre,
 }
 
-#[derive(sqlx::FromRow, Debug, PartialEq)]
+#[derive(sqlx::FromRow, Clone, Debug, PartialEq)]
 pub struct ArticleModel {
     pub id: Uuid,
     pub name: String,
