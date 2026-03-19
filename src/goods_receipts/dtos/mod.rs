@@ -1,0 +1,5 @@
+pub mod goods_receipt_head_create_dto;
+pub mod goods_receipt_head_response_dto;
+pub mod goods_receipt_head_update_dto;
+pub mod goods_receipt_item_create_dto;
+pub mod goods_receipt_item_response_dto;
