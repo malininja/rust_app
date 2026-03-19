@@ -44,6 +44,8 @@ When a plan is agreed upon during Planning Mode, a documentation file must be cr
 - **Naming convention:** `feature_YY-MM-DD-hh-mm.md` using the date and time of the discussion (e.g., `feature_26-02-21-14-30.md`)
 - **Contents:** The agreed plan — its purpose, the approach, and any key Rust concepts or crates involved.
 
+**Universal prerequisite:** When the user approves a plan or asks to proceed with implementation — regardless of whether Planning Mode was used in the current conversation — check that a feature doc exists in `features/` for that feature. If one is missing, create it before providing any guidance.
+
 ## Project Conventions
 
 Established conventions are documented in the `docs/` directory. When reviewing code or giving guidance, flag any code that violates these conventions.
