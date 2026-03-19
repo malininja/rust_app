@@ -1,5 +1,6 @@
 pub mod articles;
 pub mod auth;
+pub mod goods_receipts;
 pub mod roles;
 pub mod users;
 use sqlx::postgres::PgPool;
@@ -17,7 +18,10 @@ pub fn create_app(app_state: AppState) -> Router {
     Router::new()
         .nest("/roles", roles::role_router::router(app_state.clone()))
         .nest("/users", users::user_router::router(app_state.clone()))
-        .nest("/articles", articles::article_router::router(app_state.clone()))
+        .nest(
+            "/articles",
+            articles::article_router::router(app_state.clone()),
+        )
         .route("/", get(handler))
         .nest("/login", auth::auth_router::router())
         .with_state(app_state)
