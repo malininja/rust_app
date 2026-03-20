@@ -45,7 +45,7 @@ impl PgUserRepository {
 #[async_trait]
 impl UserRepository for PgUserRepository {
     async fn get_all_users(&self) -> Result<Vec<UserModel>, Error> {
-        Ok(sqlx::query_as!(
+        sqlx::query_as!(
             UserModel,
             "
             SELECT id, role_id, username, password, created_at, updated_at, deleted_at 
@@ -54,11 +54,11 @@ impl UserRepository for PgUserRepository {
             "
         )
         .fetch_all(&self.pool)
-        .await?)
+        .await
     }
 
     async fn get_user_by_id(&self, id: Uuid) -> Result<Option<UserModel>, Error> {
-        Ok(sqlx::query_as!(
+        sqlx::query_as!(
             UserModel,
             "
             SELECT id, role_id, username, password, created_at, updated_at, deleted_at 
@@ -69,11 +69,11 @@ impl UserRepository for PgUserRepository {
             id
         )
         .fetch_optional(&self.pool)
-        .await?)
+        .await
     }
 
     async fn get_user_by_username(&self, username: String) -> Result<Option<UserModel>, Error> {
-        Ok(sqlx::query_as!(
+        sqlx::query_as!(
             UserModel,
             "
             SELECT id, role_id, username, password, created_at, updated_at, deleted_at 
@@ -84,7 +84,7 @@ impl UserRepository for PgUserRepository {
             username
         )
         .fetch_optional(&self.pool)
-        .await?)
+        .await
     }
 
     async fn create_user(
@@ -93,7 +93,7 @@ impl UserRepository for PgUserRepository {
         username: String,
         hashed_password: String,
     ) -> Result<UserModel, Error> {
-        Ok(sqlx::query_as!(
+        sqlx::query_as!(
             UserModel,
             "
             INSERT INTO users (role_id, username, password) 
@@ -105,7 +105,7 @@ impl UserRepository for PgUserRepository {
             hashed_password
         )
         .fetch_one(&self.pool)
-        .await?)
+        .await
     }
 
     async fn update_user(
@@ -115,7 +115,7 @@ impl UserRepository for PgUserRepository {
         username: Option<String>,
         hashed_password: Option<String>,
     ) -> Result<Option<UserModel>, Error> {
-        Ok(sqlx::query_as!(
+        sqlx::query_as!(
             UserModel,
             "
             UPDATE users SET 
@@ -131,11 +131,11 @@ impl UserRepository for PgUserRepository {
             id
         )
         .fetch_optional(&self.pool)
-        .await?)
+        .await
     }
 
     async fn soft_delete_user(&self, id: Uuid) -> Result<Option<UserModel>, Error> {
-        Ok(sqlx::query_as!(
+        sqlx::query_as!(
             UserModel,
             "
             UPDATE users SET deleted_at = NOW()
@@ -146,11 +146,11 @@ impl UserRepository for PgUserRepository {
             id
         )
         .fetch_optional(&self.pool)
-        .await?)
+        .await
     }
 
     async fn soft_undelete_user(&self, id: Uuid) -> Result<Option<UserModel>, Error> {
-        Ok(sqlx::query_as!(
+        sqlx::query_as!(
             UserModel,
             "
             UPDATE users SET deleted_at = NULL 
@@ -161,6 +161,6 @@ impl UserRepository for PgUserRepository {
             id
         )
         .fetch_optional(&self.pool)
-        .await?)
+        .await
     }
 }

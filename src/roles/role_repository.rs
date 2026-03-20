@@ -20,11 +20,11 @@ impl PgRoleRepository {
 #[async_trait]
 impl RoleRepository for PgRoleRepository {
     async fn get_all_roles(&self) -> Result<Vec<RoleModel>, Error> {
-        Ok(sqlx::query_as!(
+        sqlx::query_as!(
             RoleModel,
             "SELECT id, code, name, created_at, updated_at FROM roles"
         )
         .fetch_all(&self.pool)
-        .await?)
+        .await
     }
 }
