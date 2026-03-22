@@ -22,6 +22,10 @@ pub fn create_app(app_state: AppState) -> Router {
             "/articles",
             articles::article_router::router(app_state.clone()),
         )
+        .nest(
+            "/goods_receipts",
+            goods_receipts::goods_receipt_router::router(app_state.clone()),
+        )
         .route("/", get(handler))
         .nest("/login", auth::auth_router::router())
         .with_state(app_state)
