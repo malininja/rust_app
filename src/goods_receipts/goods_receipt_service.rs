@@ -74,8 +74,11 @@ pub async fn update(
     }
 }
 
-pub async fn soft_delete(repo: PgGoodsReceiptRepository, id: Uuid) -> Result<(), GoodsReceiptError> {
-      match repo.soft_delete(id).await {
+pub async fn soft_delete(
+    repo: PgGoodsReceiptRepository,
+    id: Uuid,
+) -> Result<(), GoodsReceiptError> {
+    match repo.soft_delete(id).await {
         Ok(()) => Ok(()),
         Err(e) => {
             tracing::error!("{}: soft delete error: {}", LOG_CONTEXT, e);

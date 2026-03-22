@@ -130,7 +130,7 @@ impl PgGoodsReceiptRepository {
             .await?;
         }
 
-        let _ = tx.commit().await?;
+        tx.commit().await?;
 
         let head = self.get_head(id).await?;
 
