@@ -4,7 +4,7 @@ use uuid::Uuid;
 
 use crate::goods_receipts::goods_receipt_item_model::GoodsReceiptItemModel;
 
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Serialize, Deserialize, Debug, PartialEq)]
 pub struct GoodsReceiptItemResponseDto {
     pub id: Uuid,
     pub goods_receipt_head_id: Uuid,

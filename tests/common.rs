@@ -9,13 +9,16 @@ pub const TEST_JWT_SECRET: &str = "long_random_string";
 pub const ADMIN_USERNAME: &str = "admin";
 pub const ADMIN_PASSWORD: &str = "123456";
 
+pub const USER_USERNAME: &str = "user";
+pub const USER_PASSWORD: &str = "123456";
+
 pub struct TestApp {
     pub base_url: String,
     pub port: u16,
 }
 
 pub async fn create_test_app(state: AppState) -> TestApp {
-    insert_admin_user(&state.pool).await;
+    insert_users(&state.pool).await;
 
     let base_url = "127.0.0.1".to_string();
 
@@ -29,16 +32,23 @@ pub async fn create_test_app(state: AppState) -> TestApp {
     TestApp { base_url, port }
 }
 
-async fn insert_admin_user(pool: &PgPool) {
+async fn insert_users(pool: &PgPool) {
     let _ = sqlx::query!("
         INSERT INTO users 
         (role_id, username, password) 
-        VALUES (1, 'admin', '$argon2id$v=19$m=19456,t=2,p=1$dKfeZ4YkSzZg8+8ee7aB/w$grQunmZPhwcYgd50jG3LTYE8TNVc1oJBLDp6VUS18xU') 
+        VALUES (1, $1, '$argon2id$v=19$m=19456,t=2,p=1$dKfeZ4YkSzZg8+8ee7aB/w$grQunmZPhwcYgd50jG3LTYE8TNVc1oJBLDp6VUS18xU') 
         ON CONFLICT DO NOTHING
-    ").execute(pool).await;
+    ", ADMIN_USERNAME).execute(pool).await;
+
+    let _ = sqlx::query!("
+        INSERT INTO users 
+        (role_id, username, password) 
+        VALUES (2, $1, '$argon2id$v=19$m=19456,t=2,p=1$dKfeZ4YkSzZg8+8ee7aB/w$grQunmZPhwcYgd50jG3LTYE8TNVc1oJBLDp6VUS18xU') 
+        ON CONFLICT DO NOTHING
+    ", USER_USERNAME).execute(pool).await;
 }
 
-#[allow(dead_code)] // not use in some tests
+#[allow(dead_code)] // not used in some tests
 pub async fn get_admin_token(app: &TestApp) -> String {
     let TestApp { base_url, port } = app;
 
@@ -47,6 +57,30 @@ pub async fn get_admin_token(app: &TestApp) -> String {
     let login_dto = LoginRequestDto {
         username: ADMIN_USERNAME.to_string(),
         password: ADMIN_PASSWORD.to_string(),
+    };
+
+    let auth_res = reqwest_client
+        .post(format!("http://{base_url}:{port}/login"))
+        .json(&login_dto)
+        .send()
+        .await
+        .unwrap()
+        .json::<LoginResponseDto>()
+        .await
+        .unwrap();
+
+    auth_res.token
+}
+
+#[allow(dead_code)] // not used in some tests
+pub async fn get_user_token(app: &TestApp) -> String {
+    let TestApp { base_url, port } = app;
+
+    let reqwest_client = reqwest::Client::new();
+
+    let login_dto = LoginRequestDto {
+        username: USER_USERNAME.to_string(),
+        password: USER_PASSWORD.to_string(),
     };
 
     let auth_res = reqwest_client
