@@ -1,6 +1,7 @@
 pub mod articles;
 pub mod auth;
 pub mod goods_receipts;
+pub mod invoices;
 pub mod roles;
 pub mod users;
 use sqlx::postgres::PgPool;
