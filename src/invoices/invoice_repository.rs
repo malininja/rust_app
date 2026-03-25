@@ -3,8 +3,7 @@ use sqlx::{Error, PgPool};
 use uuid::Uuid;
 
 use crate::invoices::{
-    dtos::invoice_item_create_dto::InvoiceItemCreateDto,
-    invoice_head_model::InvoiceHeadModel,
+    dtos::invoice_item_create_dto::InvoiceItemCreateDto, invoice_head_model::InvoiceHeadModel,
     invoice_item_model::InvoiceItemModel,
 };
 
@@ -93,22 +92,28 @@ impl PgInvoiceRepository {
         customer_name: Option<String>,
         confirmed: Option<bool>,
         items: Option<Vec<InvoiceItemCreateDto>>,
-    ) -> Result<(InvoiceHeadModel, Vec<InvoiceItemModel>), Error> {
+    ) -> Result<Option<(InvoiceHeadModel, Vec<InvoiceItemModel>)>, Error> {
         let mut tx = self.pool.begin().await?;
 
-        let _ = sqlx::query!(
+        let updated = sqlx::query!(
             "
             UPDATE invoice_heads SET
             customer_name = COALESCE($2::TEXT, customer_name),
             confirmed = COALESCE($3::BOOLEAN, confirmed)
             WHERE id = $1
+              AND deleted_at IS NULL
+            RETURNING id
             ",
             id,
             customer_name,
             confirmed
         )
-        .execute(&mut *tx)
+        .fetch_optional(&mut *tx)
         .await?;
+
+        if updated.is_none() {
+            return Ok(None);
+        }
 
         if let Some(unwrapped) = items {
             let article_ids: Vec<Uuid> = unwrapped.iter().map(|i| i.article_id).collect();
@@ -136,7 +141,7 @@ impl PgInvoiceRepository {
 
         let items = self.get_items(id).await?;
 
-        Ok((head, items))
+        Ok(Some((head, items)))
     }
 
     pub async fn soft_delete(&self, id: Uuid) -> Result<(), Error> {

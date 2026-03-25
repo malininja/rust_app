@@ -66,7 +66,8 @@ pub async fn update(
     } = dto;
 
     match repo.update(id, customer_name, confirmed, items).await {
-        Ok(item) => Ok(InvoiceHeadResponseDto::new(item.0, Some(item.1))),
+        Ok(Some(item)) => Ok(InvoiceHeadResponseDto::new(item.0, Some(item.1))),
+        Ok(None) => Err(InvoiceError::NotFoundError),
         Err(e) => {
             tracing::error!("{}: update error: {}", LOG_CONTEXT, e);
             Err(InvoiceError::UpdateError)
