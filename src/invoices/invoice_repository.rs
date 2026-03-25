@@ -120,11 +120,14 @@ impl PgInvoiceRepository {
             let ordinals: Vec<i32> = unwrapped.iter().map(|i| i.ordinal).collect();
             let quantities: Vec<Decimal> = unwrapped.iter().map(|i| i.quantity).collect();
 
+            let _ = sqlx::query!("DELETE FROM invoice_items WHERE invoice_head_id = $1", id)
+                .execute(&mut *tx)
+                .await;
+
             let _ = sqlx::query!(
                 "
-                WITH _ AS (DELETE FROM invoice_items WHERE invoice_head_id = $1)
                 INSERT INTO invoice_items (invoice_head_id, article_id, ordinal, quantity)
-                  SELECT (SELECT $1), a, o, q FROM UNNEST($2::UUID[], $3::INT[], $4::NUMERIC[]) AS t(a, o, q)
+                  SELECT (SELECT $1::UUID), a, o, q FROM UNNEST($2::UUID[], $3::INT[], $4::NUMERIC[]) AS t(a, o, q)
                 ",
                 id,
                 &article_ids,
