@@ -4,11 +4,11 @@ use uuid::Uuid;
 
 use crate::warehouse_stocks::warehouse_stock_model::WarehouseStockModel;
 
-pub struct WarehouseStockRepository {
+pub struct PgWarehouseStockRepository {
     pub pool: PgPool,
 }
 
-impl WarehouseStockRepository {
+impl PgWarehouseStockRepository {
     pub fn new(pool: PgPool) -> Self {
         Self { pool }
     }
