@@ -32,10 +32,7 @@ async fn test_invoice_router(pool: PgPool) {
 
     let articles_url = format!("http://{}:{}/articles", test_app.base_url, test_app.port);
 
-    let invoices_url = format!(
-        "http://{}:{}/invoices",
-        test_app.base_url, test_app.port
-    );
+    let invoices_url = format!("http://{}:{}/invoices", test_app.base_url, test_app.port);
 
     let reqwest_client = reqwest::Client::new();
 
@@ -162,10 +159,7 @@ async fn test_invoice_router(pool: PgPool) {
     };
 
     let invoice_update_response = reqwest_client
-        .patch(format!(
-            "{}/{}",
-            &invoices_url, invoice_create_result.id
-        ))
+        .patch(format!("{}/{}", &invoices_url, invoice_create_result.id))
         .header(header_name, &header_value)
         .json(&invoice_update_dto)
         .send()
@@ -232,10 +226,7 @@ async fn test_invoice_router(pool: PgPool) {
     //############# GET INVOICE
 
     let get_invoice_response = reqwest_client
-        .get(format!(
-            "{}/{}",
-            &invoices_url, invoice_create_result.id
-        ))
+        .get(format!("{}/{}", &invoices_url, invoice_create_result.id))
         .header(header_name, &header_value)
         .send()
         .await

@@ -2,8 +2,7 @@ use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
 use crate::invoices::{
-    dtos::invoice_item_response_dto::InvoiceItemResponseDto,
-    invoice_head_model::InvoiceHeadModel,
+    dtos::invoice_item_response_dto::InvoiceItemResponseDto, invoice_head_model::InvoiceHeadModel,
     invoice_item_model::InvoiceItemModel,
 };
 
@@ -16,10 +15,7 @@ pub struct InvoiceHeadResponseDto {
 }
 
 impl InvoiceHeadResponseDto {
-    pub fn new(
-        head_model: InvoiceHeadModel,
-        item_models: Option<Vec<InvoiceItemModel>>,
-    ) -> Self {
+    pub fn new(head_model: InvoiceHeadModel, item_models: Option<Vec<InvoiceItemModel>>) -> Self {
         let InvoiceHeadModel {
             id,
             customer_name,
@@ -28,11 +24,10 @@ impl InvoiceHeadResponseDto {
         } = head_model;
 
         let items = item_models.map(|items| {
-            let dtos = items
+            items
                 .into_iter()
                 .map(InvoiceItemResponseDto::from)
-                .collect();
-            dtos
+                .collect()
         });
 
         Self {

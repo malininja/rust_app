@@ -75,10 +75,7 @@ pub async fn update(
     }
 }
 
-pub async fn soft_delete(
-    repo: PgInvoiceRepository,
-    id: Uuid,
-) -> Result<(), InvoiceError> {
+pub async fn soft_delete(repo: PgInvoiceRepository, id: Uuid) -> Result<(), InvoiceError> {
     match repo.soft_delete(id).await {
         Ok(()) => Ok(()),
         Err(e) => {
