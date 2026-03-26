@@ -4,6 +4,8 @@ pub mod goods_receipts;
 pub mod invoices;
 pub mod roles;
 pub mod users;
+pub mod warehouse_stocks;
+
 use sqlx::postgres::PgPool;
 
 use axum::{Router, routing::get};
