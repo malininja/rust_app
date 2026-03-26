@@ -33,6 +33,10 @@ pub fn create_app(app_state: AppState) -> Router {
             "/invoices",
             invoices::invoice_router::router(app_state.clone()),
         )
+        .nest(
+            "/warehouse_stocks",
+            warehouse_stocks::warehouse_stock_router::router(app_state.clone()),
+        )
         .route("/", get(handler))
         .nest("/login", auth::auth_router::router())
         .with_state(app_state)
