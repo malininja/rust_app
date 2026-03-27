@@ -65,6 +65,22 @@ pub async fn create(
     }
 }
 
+pub async fn confirm(
+    State(app_state): State<AppState>,
+    Path(id): Path<Uuid>,
+) -> Result<impl IntoResponse, StatusCode> {
+    let repo = PgInvoiceRepository::new(app_state.pool);
+
+    match invoice_service::confirm(repo, id).await {
+        Ok(()) => Ok((StatusCode::NO_CONTENT, ())),
+        Err(InvoiceError::NotFoundError) => Err(StatusCode::NOT_FOUND),
+        Err(e) => {
+            tracing::error!("{}: confirm error: {}", LOG_CONTEXT, e);
+            Err(StatusCode::INTERNAL_SERVER_ERROR)
+        }
+    }
+}
+
 pub async fn update(
     State(app_state): State<AppState>,
     Path(id): Path<Uuid>,
@@ -75,6 +91,7 @@ pub async fn update(
     match invoice_service::update(repo, id, dto).await {
         Ok(item) => Ok(Json(item)),
         Err(InvoiceError::NotFoundError) => Err(StatusCode::NOT_FOUND),
+        Err(InvoiceError::AlreadyConfirmedError) => Err(StatusCode::CONFLICT),
         Err(e) => {
             tracing::error!("{}: update error: {}", LOG_CONTEXT, e);
             Err(StatusCode::INTERNAL_SERVER_ERROR)

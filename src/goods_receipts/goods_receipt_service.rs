@@ -54,6 +54,29 @@ pub async fn create(
     }
 }
 
+pub async fn confirm(repo: PgGoodsReceiptRepository, id: Uuid) -> Result<(), GoodsReceiptError> {
+    match repo.get_by_id(id).await {
+        Ok(Some(receipt)) => {
+            if receipt.0.confirmed {
+                return Err(GoodsReceiptError::AlreadyConfirmedError);
+            }
+        }
+        Ok(None) => return Err(GoodsReceiptError::NotFoundError),
+        Err(e) => {
+            tracing::error!("{}: confirm error: {}", LOG_CONTEXT, e);
+            return Err(GoodsReceiptError::ConfirmError);
+        }
+    }
+
+    match repo.confirm(id).await {
+        Ok(_) => Ok(()),
+        Err(e) => {
+            tracing::error!("{}: confirm error: {}", LOG_CONTEXT, e);
+            Err(GoodsReceiptError::ConfirmError)
+        }
+    }
+}
+
 pub async fn update(
     repo: PgGoodsReceiptRepository,
     id: Uuid,
@@ -61,11 +84,10 @@ pub async fn update(
 ) -> Result<GoodsReceiptHeadResponseDto, GoodsReceiptError> {
     let GoodsReceiptHeadUpdateDto {
         supplier_name,
-        confirmed,
         items,
     } = dto;
 
-    match repo.update(id, supplier_name, confirmed, items).await {
+    match repo.update(id, supplier_name, items).await {
         Ok(item) => Ok(GoodsReceiptHeadResponseDto::new(item.0, Some(item.1))),
         Err(e) => {
             tracing::error!("{}: update error: {}", LOG_CONTEXT, e);

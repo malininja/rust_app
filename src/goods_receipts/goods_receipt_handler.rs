@@ -65,6 +65,23 @@ pub async fn create(
     }
 }
 
+pub async fn confirm(
+    State(app_state): State<AppState>,
+    Path(id): Path<Uuid>,
+) -> Result<impl IntoResponse, StatusCode> {
+    let repo = PgGoodsReceiptRepository::new(app_state.pool);
+
+    match goods_receipt_service::confirm(repo, id).await {
+        Ok(()) => Ok((StatusCode::NO_CONTENT, ())),
+        Err(GoodsReceiptError::NotFoundError) => Err(StatusCode::NOT_FOUND),
+        Err(GoodsReceiptError::AlreadyConfirmedError) => Err(StatusCode::CONFLICT),
+        Err(e) => {
+            tracing::error!("{}: confirm error: {}", LOG_CONTEXT, e);
+            Err(StatusCode::INTERNAL_SERVER_ERROR)
+        }
+    }
+}
+
 pub async fn update(
     State(app_state): State<AppState>,
     Path(id): Path<Uuid>,

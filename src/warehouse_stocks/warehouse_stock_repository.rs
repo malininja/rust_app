@@ -1,5 +1,5 @@
 use rust_decimal::Decimal;
-use sqlx::{Error, PgPool};
+use sqlx::{Error, PgPool, Postgres, Transaction};
 use uuid::Uuid;
 
 use crate::warehouse_stocks::warehouse_stock_model::WarehouseStockModel;
@@ -45,33 +45,33 @@ impl PgWarehouseStockRepository {
         .fetch_optional(&self.pool)
         .await
     }
+}
 
-    pub async fn update_quantity(
-        &self,
-        article_quantities: Vec<(Uuid, Decimal)>,
-    ) -> Result<(), Error> {
-        let article_ids: Vec<Uuid> = article_quantities
-            .iter()
-            .map(|(article_id, _)| *article_id)
-            .collect();
-        let quantities: Vec<Decimal> = article_quantities
-            .iter()
-            .map(|(_, quantity)| *quantity)
-            .collect();
+pub async fn update_quantity(
+    tx: &mut Transaction<'_, Postgres>,
+    article_quantities: Vec<(Uuid, Decimal)>,
+) -> Result<(), Error> {
+    let article_ids: Vec<Uuid> = article_quantities
+        .iter()
+        .map(|(article_id, _)| *article_id)
+        .collect();
+    let quantities: Vec<Decimal> = article_quantities
+        .iter()
+        .map(|(_, quantity)| *quantity)
+        .collect();
 
-        sqlx::query!(
-            "
+    sqlx::query!(
+        "
             INSERT INTO warehouse_stocks (article_id, quantity) 
               SELECT * FROM UNNEST($1::UUID[], $2::NUMERIC[])
             ON CONFLICT (article_id)
             DO UPDATE SET quantity = warehouse_stocks.quantity + EXCLUDED.quantity
             ",
-            &article_ids,
-            &quantities,
-        )
-        .execute(&self.pool)
-        .await?;
+        &article_ids,
+        &quantities,
+    )
+    .execute(tx.as_mut())
+    .await?;
 
-        Ok(())
-    }
+    Ok(())
 }

@@ -154,7 +154,6 @@ async fn test_invoice_router(pool: PgPool) {
 
     let invoice_update_dto = InvoiceHeadUpdateDto {
         customer_name: Some("some other supplier".to_string()),
-        confirmed: None,
         items: Some(invoice_item_update_dtos),
     };
 

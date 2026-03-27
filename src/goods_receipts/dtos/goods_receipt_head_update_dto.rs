@@ -5,6 +5,5 @@ use crate::goods_receipts::dtos::goods_receipt_item_create_dto::GoodsReceiptItem
 #[derive(Serialize, Deserialize, Debug)]
 pub struct GoodsReceiptHeadUpdateDto {
     pub supplier_name: Option<String>,
-    pub confirmed: Option<bool>,
     pub items: Option<Vec<GoodsReceiptItemCreateDto>>,
 }

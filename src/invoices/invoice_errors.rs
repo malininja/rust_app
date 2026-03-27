@@ -14,6 +14,12 @@ pub enum InvoiceError {
     #[error("Error inserting invoice in the database")]
     CreateError,
 
+    #[error("Error confirming invoice in the database")]
+    ConfirmError,
+
+    #[error("Invoice is already confirmed")]
+    AlreadyConfirmedError,
+
     #[error("Error updating invoice in the database")]
     UpdateError,
 

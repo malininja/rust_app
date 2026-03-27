@@ -54,6 +54,29 @@ pub async fn create(
     }
 }
 
+pub async fn confirm(repo: PgInvoiceRepository, id: Uuid) -> Result<(), InvoiceError> {
+    match repo.get_by_id(id).await {
+        Ok(Some(invoice)) => {
+            if invoice.0.confirmed {
+                return Err(InvoiceError::AlreadyConfirmedError);
+            }
+        }
+        Ok(None) => return Err(InvoiceError::NotFoundError),
+        Err(e) => {
+            tracing::error!("{}: confirm error: {}", LOG_CONTEXT, e);
+            return Err(InvoiceError::ConfirmError);
+        }
+    }
+
+    match repo.confirm(id).await {
+        Ok(_) => Ok(()),
+        Err(e) => {
+            tracing::error!("{}: confirm error: {}", LOG_CONTEXT, e);
+            Err(InvoiceError::ConfirmError)
+        }
+    }
+}
+
 pub async fn update(
     repo: PgInvoiceRepository,
     id: Uuid,
@@ -61,11 +84,10 @@ pub async fn update(
 ) -> Result<InvoiceHeadResponseDto, InvoiceError> {
     let InvoiceHeadUpdateDto {
         customer_name,
-        confirmed,
         items,
     } = dto;
 
-    match repo.update(id, customer_name, confirmed, items).await {
+    match repo.update(id, customer_name, items).await {
         Ok(Some(item)) => Ok(InvoiceHeadResponseDto::new(item.0, Some(item.1))),
         Ok(None) => Err(InvoiceError::NotFoundError),
         Err(e) => {

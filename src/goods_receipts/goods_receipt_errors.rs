@@ -14,6 +14,12 @@ pub enum GoodsReceiptError {
     #[error("Error inserting goods receipt in the database")]
     CreateError,
 
+    #[error("Error confirming goods receipt in the database")]
+    ConfirmError,
+
+    #[error("Goods receipt is already confirmed")]
+    AlreadyConfirmedError,
+
     #[error("Error updating goods receipt in the database")]
     UpdateError,
 

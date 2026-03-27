@@ -14,7 +14,7 @@ pub async fn get_all(
     match repo.get_all().await {
         Ok(items) => Ok(items
             .into_iter()
-            .map(|i| WarehouseStockResponseDto::from(i))
+            .map(WarehouseStockResponseDto::from)
             .collect()),
         Err(e) => {
             tracing::error!("{}: get_all_unconfirmed error: {}", LOG_CONTEXT, e);

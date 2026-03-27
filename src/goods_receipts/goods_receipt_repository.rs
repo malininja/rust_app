@@ -1,11 +1,14 @@
 use rust_decimal::Decimal;
-use sqlx::{Error, PgPool};
+use sqlx::{Error, PgExecutor, PgPool};
 use uuid::Uuid;
 
-use crate::goods_receipts::{
-    dtos::goods_receipt_item_create_dto::GoodsReceiptItemCreateDto,
-    goods_receipt_head_model::GoodsReceiptHeadModel,
-    goods_receipt_item_model::GoodsReceiptItemModel,
+use crate::{
+    goods_receipts::{
+        dtos::goods_receipt_item_create_dto::GoodsReceiptItemCreateDto,
+        goods_receipt_head_model::GoodsReceiptHeadModel,
+        goods_receipt_item_model::GoodsReceiptItemModel,
+    },
+    warehouse_stocks::warehouse_stock_repository::update_quantity,
 };
 
 pub struct PgGoodsReceiptRepository {
@@ -35,16 +38,10 @@ impl PgGoodsReceiptRepository {
         &self,
         id: Uuid,
     ) -> Result<Option<(GoodsReceiptHeadModel, Vec<GoodsReceiptItemModel>)>, Error> {
-        let head_option = sqlx::query_as!(
-            GoodsReceiptHeadModel,
-            "SELECT * FROM goods_receipt_heads WHERE id=$1",
-            id
-        )
-        .fetch_optional(&self.pool)
-        .await?;
+        let head_option = get_by_id(&self.pool, id).await?;
 
         if let Some(head) = head_option {
-            let items = self.get_items(id).await?;
+            let items = get_items(&self.pool, id).await?;
             return Ok(Some((head, items)));
         }
 
@@ -87,11 +84,39 @@ impl PgGoodsReceiptRepository {
         Ok((head, items))
     }
 
+    pub async fn confirm(&self, id: Uuid) -> Result<GoodsReceiptHeadModel, Error> {
+        let mut tx = self.pool.begin().await?;
+
+        let head = sqlx::query_as!(
+            GoodsReceiptHeadModel,
+            "
+            UPDATE goods_receipt_heads
+              SET confirmed = true
+            WHERE id = $1
+              AND confirmed = false
+            RETURNING id, supplier_name, confirmed, created_at, updated_at, deleted_at   
+            ",
+            id
+        )
+        .fetch_one(&mut *tx)
+        .await?;
+
+        let items = get_items(tx.as_mut(), id).await?;
+
+        let article_quantities: Vec<(Uuid, Decimal)> =
+            items.iter().map(|i| (i.article_id, i.quantity)).collect();
+
+        update_quantity(&mut tx, article_quantities).await?;
+
+        tx.commit().await?;
+
+        Ok(head)
+    }
+
     pub async fn update(
         &self,
         id: Uuid,
         supplier_name: Option<String>,
-        confirmed: Option<bool>,
         items: Option<Vec<GoodsReceiptItemCreateDto>>,
     ) -> Result<(GoodsReceiptHeadModel, Vec<GoodsReceiptItemModel>), Error> {
         let mut tx = self.pool.begin().await?;
@@ -99,13 +124,11 @@ impl PgGoodsReceiptRepository {
         let _ = sqlx::query!(
             "
             UPDATE goods_receipt_heads SET
-            supplier_name = COALESCE($2::TEXT, supplier_name),
-            confirmed = COALESCE($3::BOOLEAN, confirmed)
+            supplier_name = COALESCE($2::TEXT, supplier_name)
             WHERE id = $1
             ",
             id,
             supplier_name,
-            confirmed
         )
         .execute(&mut *tx)
         .await?;
@@ -169,4 +192,30 @@ impl PgGoodsReceiptRepository {
         .fetch_all(&self.pool)
         .await
     }
+}
+
+async fn get_by_id<'e, E: PgExecutor<'e>>(
+    executor: E,
+    id: Uuid,
+) -> Result<Option<GoodsReceiptHeadModel>, Error> {
+    sqlx::query_as!(
+        GoodsReceiptHeadModel,
+        "SELECT * FROM goods_receipt_heads WHERE id=$1",
+        id
+    )
+    .fetch_optional(executor)
+    .await
+}
+
+async fn get_items<'e, E: PgExecutor<'e>>(
+    executor: E,
+    head_id: Uuid,
+) -> Result<Vec<GoodsReceiptItemModel>, Error> {
+    sqlx::query_as!(
+        GoodsReceiptItemModel,
+        "SELECT * FROM goods_receipt_items WHERE goods_receipt_head_id=$1",
+        head_id
+    )
+    .fetch_all(executor)
+    .await
 }

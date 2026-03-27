@@ -157,7 +157,6 @@ async fn test_goods_receipt_router(pool: PgPool) {
 
     let goods_receipt_update_dto = GoodsReceiptHeadUpdateDto {
         supplier_name: Some("some other supplier".to_string()),
-        confirmed: None,
         items: Some(goods_receipt_item_update_dtos),
     };
 

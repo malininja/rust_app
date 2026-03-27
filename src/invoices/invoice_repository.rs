@@ -1,10 +1,13 @@
 use rust_decimal::Decimal;
-use sqlx::{Error, PgPool};
+use sqlx::{Error, PgExecutor, PgPool};
 use uuid::Uuid;
 
-use crate::invoices::{
-    dtos::invoice_item_create_dto::InvoiceItemCreateDto, invoice_head_model::InvoiceHeadModel,
-    invoice_item_model::InvoiceItemModel,
+use crate::{
+    invoices::{
+        dtos::invoice_item_create_dto::InvoiceItemCreateDto, invoice_head_model::InvoiceHeadModel,
+        invoice_item_model::InvoiceItemModel,
+    },
+    warehouse_stocks::warehouse_stock_repository::update_quantity,
 };
 
 pub struct PgInvoiceRepository {
@@ -34,16 +37,10 @@ impl PgInvoiceRepository {
         &self,
         id: Uuid,
     ) -> Result<Option<(InvoiceHeadModel, Vec<InvoiceItemModel>)>, Error> {
-        let head_option = sqlx::query_as!(
-            InvoiceHeadModel,
-            "SELECT * FROM invoice_heads WHERE id=$1",
-            id
-        )
-        .fetch_optional(&self.pool)
-        .await?;
+        let head_option = get_by_id(&self.pool, id).await?;
 
         if let Some(head) = head_option {
-            let items = self.get_items(id).await?;
+            let items = get_items(&self.pool, id).await?;
             return Ok(Some((head, items)));
         }
 
@@ -86,11 +83,39 @@ impl PgInvoiceRepository {
         Ok((head, items))
     }
 
+    pub async fn confirm(&self, id: Uuid) -> Result<InvoiceHeadModel, Error> {
+        let mut tx = self.pool.begin().await?;
+
+        let head = sqlx::query_as!(
+            InvoiceHeadModel,
+            "
+            UPDATE invoice_heads
+              SET confirmed = true
+            WHERE id = $1
+              AND confirmed = false
+            RETURNING id, customer_name, confirmed, created_at, updated_at, deleted_at   
+            ",
+            id
+        )
+        .fetch_one(tx.as_mut())
+        .await?;
+
+        let items = get_items(tx.as_mut(), id).await?;
+
+        let article_quantities: Vec<(Uuid, Decimal)> =
+            items.iter().map(|i| (i.article_id, -i.quantity)).collect();
+
+        update_quantity(&mut tx, article_quantities).await?;
+
+        tx.commit().await?;
+
+        Ok(head)
+    }
+
     pub async fn update(
         &self,
         id: Uuid,
         customer_name: Option<String>,
-        confirmed: Option<bool>,
         items: Option<Vec<InvoiceItemCreateDto>>,
     ) -> Result<Option<(InvoiceHeadModel, Vec<InvoiceItemModel>)>, Error> {
         let mut tx = self.pool.begin().await?;
@@ -98,15 +123,13 @@ impl PgInvoiceRepository {
         let updated = sqlx::query!(
             "
             UPDATE invoice_heads SET
-            customer_name = COALESCE($2::TEXT, customer_name),
-            confirmed = COALESCE($3::BOOLEAN, confirmed)
+            customer_name = COALESCE($2::TEXT, customer_name)
             WHERE id = $1
               AND deleted_at IS NULL
             RETURNING id
             ",
             id,
-            customer_name,
-            confirmed
+            customer_name
         )
         .fetch_optional(&mut *tx)
         .await?;
@@ -177,4 +200,30 @@ impl PgInvoiceRepository {
         .fetch_all(&self.pool)
         .await
     }
+}
+
+async fn get_by_id<'e, E: PgExecutor<'e>>(
+    executor: E,
+    id: Uuid,
+) -> Result<Option<InvoiceHeadModel>, Error> {
+    sqlx::query_as!(
+        InvoiceHeadModel,
+        "SELECT * FROM invoice_heads WHERE id=$1",
+        id
+    )
+    .fetch_optional(executor)
+    .await
+}
+
+async fn get_items<'e, E: PgExecutor<'e>>(
+    executor: E,
+    head_id: Uuid,
+) -> Result<Vec<InvoiceItemModel>, Error> {
+    sqlx::query_as!(
+        InvoiceItemModel,
+        "SELECT * FROM invoice_items WHERE invoice_head_id=$1",
+        head_id
+    )
+    .fetch_all(executor)
+    .await
 }

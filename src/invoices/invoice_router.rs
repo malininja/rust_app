@@ -1,4 +1,8 @@
-use axum::{Router, middleware::from_fn_with_state, routing::get};
+use axum::{
+    Router,
+    middleware::from_fn_with_state,
+    routing::{get, patch},
+};
 
 use crate::{AppState, auth::auth_middlewares::logged_in, invoices::invoice_handler};
 
@@ -14,5 +18,6 @@ pub fn router(app_state: AppState) -> Router<AppState> {
                 .patch(invoice_handler::update)
                 .delete(invoice_handler::delete),
         )
+        .route("/{id}/confirm", patch(invoice_handler::confirm))
         .layer(from_fn_with_state(app_state, logged_in))
 }
