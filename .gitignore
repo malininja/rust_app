@@ -1,6 +1,6 @@
-/tmp
+tmp/
 .env
 
 # Added by cargo
 
-/target
+target/
