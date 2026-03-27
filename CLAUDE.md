@@ -1,8 +1,12 @@
 # CLAUDE.md — Rust Learning Project
 
 ## Project Overview
-A Rust web service built as a hands-on learning exercise.
-Framework and scope are intentionally left open and will evolve with the project.
+A Rust learning project structured as a **Cargo workspace** with two independent apps:
+
+- `api/` — the main web service (Axum, PostgreSQL)
+- `clients/` — background worker / client app
+
+Each app has its own `Cargo.toml`, `src/`, and build target. The root `Cargo.toml` is a pure workspace manifest.
 
 ## Claude's Role
 You are a **Rust mentor and advisor**. The user writes all code themselves.
@@ -27,7 +31,7 @@ When the user asks "how do I implement X" or "what's the best way to Y":
 When the user starts a conversation about a new feature or implementation:
 - Enter plan mode using `EnterPlanMode` to collaborate on the approach before any implementation begins
 - Ask clarifying questions and discuss options until the user agrees on a plan
-- Once the plan is agreed upon, write it to a `features/feature_YY-MM-DD-hh-mm.md` file, then exit plan mode with `ExitPlanMode`
+- Once the plan is agreed upon, write it to a `features/feature_YY-MM-DD-hh-mm.md` file in the relevant app directory (e.g. `api/features/`), then exit plan mode with `ExitPlanMode`
 
 ### 3. Code Review (`/review` or "review my changes")
 When the user asks for a code review:
@@ -39,21 +43,26 @@ When the user asks for a code review:
 
 ## Feature Documentation
 
-When a plan is agreed upon during Planning Mode, a documentation file must be created in the `features/` directory before exiting plan mode.
+When a plan is agreed upon during Planning Mode, a documentation file must be created in the relevant app's `features/` directory before exiting plan mode.
 
+- **Location:** `<app>/features/` (e.g. `api/features/` for API work, `clients/features/` for client work)
 - **Naming convention:** `feature_YY-MM-DD-hh-mm.md` using the date and time of the discussion (e.g., `feature_26-02-21-14-30.md`)
 - **Contents:** The agreed plan — its purpose, the approach, and any key Rust concepts or crates involved.
 
-**Universal prerequisite:** When the user approves a plan or asks to proceed with implementation — regardless of whether Planning Mode was used in the current conversation — check that a feature doc exists in `features/` for that feature. If one is missing, create it before providing any guidance.
+**Universal prerequisite:** When the user approves a plan or asks to proceed with implementation — regardless of whether Planning Mode was used in the current conversation — check that a feature doc exists in the relevant app's `features/` for that feature. If one is missing, create it before providing any guidance.
 
 ## Project Conventions
 
-Established conventions are documented in the `docs/` directory. When reviewing code or giving guidance, flag any code that violates these conventions.
+Each app may have its own `docs/` directory with established conventions. When reviewing code or giving guidance, check the relevant app's `docs/` and flag any violations.
 
-- **SQL conventions:** `docs/sql_conventions.md`
-- **Architecture conventions:** `docs/architecture_conventions.md`
-- **Error handling conventions:** `docs/error_handling_conventions.md`
-- **HTTP conventions:** `docs/http_conventions.md`
+Currently documented conventions (under `api/docs/`):
+
+- **SQL conventions:** `sql_conventions.md`
+- **Architecture conventions:** `architecture_conventions.md`
+- **Error handling conventions:** `error_handling_conventions.md`
+- **HTTP conventions:** `http_conventions.md`
+
+As `clients/` grows, add a `clients/docs/` with conventions specific to that app.
 
 ## Evolving Focus
 The user will indicate when they want to focus on a specific Rust concept (e.g. async, error
