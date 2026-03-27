@@ -13,7 +13,8 @@ pub struct RoleModel {
 #[derive(strum_macros::Display)]
 pub enum Role {
     Admin,
-    User,
+    Sales,
+    Warehouse,
 }
 
 impl TryFrom<i32> for Role {
@@ -22,7 +23,8 @@ impl TryFrom<i32> for Role {
     fn try_from(value: i32) -> Result<Self, Self::Error> {
         match value {
             1 => Ok(Role::Admin),
-            2 => Ok(Role::User),
+            2 => Ok(Role::Sales),
+            3 => Ok(Role::Warehouse),
             _ => Err("Role doesn't exist"),
         }
     }
