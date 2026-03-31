@@ -10,4 +10,3 @@ pub struct GoodsReceiptHeadResponseDto {
     pub confirmed: bool,
     pub items: Option<Vec<GoodsReceiptItemResponseDto>>,
 }
-
