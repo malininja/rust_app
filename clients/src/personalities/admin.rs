@@ -1,4 +1,4 @@
-use std::{collections::HashMap, sync::Arc, time::Duration};
+use std::{collections::HashMap, pin::Pin, sync::Arc, time::Duration};
 
 use rand::seq::IndexedRandom;
 use tokio::task::{AbortHandle, JoinSet};
@@ -9,7 +9,7 @@ use crate::{
     models::{
         roles_enum::Role, user_create_dto::UserCreateDto, user_response_dto::UserResponseDto,
     },
-    personalities::sales::Sales,
+    personalities::{sales::Sales, warehouse::Warehouse},
 };
 
 const LOG_CONTEXT: &str = "ADMIN";
@@ -20,6 +20,8 @@ pub struct Admin {
     auth_token: Option<String>,
     sales_processes: JoinSet<()>,
     sales_aborthandles: HashMap<String, AbortHandle>,
+    warehouse_processes: JoinSet<()>,
+    warehouse_aborthandles: HashMap<String, AbortHandle>,
 }
 
 impl Admin {
@@ -29,6 +31,8 @@ impl Admin {
             auth_token: None,
             sales_processes: JoinSet::new(),
             sales_aborthandles: HashMap::new(),
+            warehouse_processes: JoinSet::new(),
+            warehouse_aborthandles: HashMap::new(),
         }
     }
 
@@ -55,46 +59,91 @@ impl Admin {
             };
 
             if let Some(users) = users_option {
-                let role_id: i32 = Role::Sales.into();
-                let sales_users: Vec<&UserResponseDto> =
-                    users.iter().filter(|u| u.role_id == role_id).collect();
+                self.handle_users(Role::Sales, &users).await;
+                self.handle_users(Role::Warehouse, &users).await;
+            }
+        }
+    }
 
-                for sales_user in &sales_users {
-                    if !self.sales_aborthandles.contains_key(&sales_user.username) {
-                        let sales = Sales::new(sales_user.username.clone(), self.client.clone());
-                        let aborthandle = self.sales_processes.spawn(sales.run());
-                        self.sales_aborthandles
-                            .insert(sales_user.username.clone(), aborthandle);
+    async fn handle_users(&mut self, role: Role, all_users: &[UserResponseDto]) {
+        let role_id: i32 = (&role).into();
+        let users: Vec<&UserResponseDto> =
+            all_users.iter().filter(|u| u.role_id == role_id).collect();
 
-                        tracing::info!(
-                            "{}. New sales agent added. {}",
-                            LOG_CONTEXT,
-                            &sales_user.username
-                        );
-                    }
+        for user in &users {
+            self.create_user(user.username.clone(), &role);
+        }
+
+        if users.len() < 3 {
+            self.create_api_user(&role).await;
+        }
+    }
+
+    async fn create_api_user(&mut self, role: &Role) {
+        if let Some(token) = self.token_get().await {
+            let dto = UserCreateDto {
+                role_id: role.into(),
+                username: generate_random_string(8),
+                password: PASSWORD.to_string(),
+            };
+
+            match self.client.user_create(&token, dto).await {
+                Ok(res) => {
+                    tracing::info!(
+                        "{}. {:?} user successfully created in the backend. Name = {}",
+                        LOG_CONTEXT,
+                        role,
+                        res.username
+                    );
                 }
-
-                if sales_users.len() < 3 {
-                    let create_dto = UserCreateDto {
-                        role_id,
-                        username: generate_random_string(8),
-                        password: PASSWORD.to_string(),
-                    };
-
-                    match self.client.user_create(&token, create_dto).await {
-                        Ok(res) => {
-                            tracing::info!(
-                                "{}. Sales user successfully created in the backend. Name = {}",
-                                LOG_CONTEXT,
-                                res.username
-                            );
-                        }
-                        Err(e) => {
-                            tracing::error!("{}. user_create error. error: {}", LOG_CONTEXT, e);
-                        }
-                    };
+                Err(err) => {
+                    tracing::error!("{}. user_create error. error: {}", LOG_CONTEXT, err);
                 }
             }
+        }
+    }
+
+    fn create_user(&mut self, username: String, role: &Role) {
+        let handles_processes = match role {
+            Role::Sales => (&mut self.sales_aborthandles, &mut self.sales_processes),
+            Role::Warehouse => (
+                &mut self.warehouse_aborthandles,
+                &mut self.warehouse_processes,
+            ),
+            _ => {
+                tracing::error!(
+                    "{}. Error adding new agent. Invalid role: {:?}",
+                    LOG_CONTEXT,
+                    role
+                );
+                return;
+            }
+        };
+
+        let (aborthandles, processes) = handles_processes;
+
+        if !aborthandles.contains_key(&username) {
+            let user_future = match role {
+                Role::Sales => Box::pin(Sales::new(username.clone(), self.client.clone()).run())
+                    as Pin<Box<dyn Future<Output = ()> + Send>>,
+
+                Role::Warehouse => {
+                    Box::pin(Warehouse::new(username.clone(), self.client.clone()).run())
+                        as Pin<Box<dyn Future<Output = ()> + Send>>
+                }
+
+                _ => return,
+            };
+
+            let aborthandle = processes.spawn(user_future);
+            aborthandles.insert(username.clone(), aborthandle);
+                              
+                                        tracing::info!(
+                                "{}. New {:?} agent added. {}",
+                                LOG_CONTEXT,
+                                role,
+                                &username
+                            );
         }
     }
 

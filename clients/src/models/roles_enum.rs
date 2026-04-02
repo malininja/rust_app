@@ -5,8 +5,8 @@ pub enum Role {
     Warehouse,
 }
 
-impl From<Role> for i32 {
-    fn from(value: Role) -> Self {
+impl From<&Role> for i32 {
+    fn from(value: &Role) -> Self {
         match value {
             Role::Admin => 1,
             Role::Sales => 2,

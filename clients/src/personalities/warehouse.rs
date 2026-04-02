@@ -4,15 +4,15 @@ use rand::{SeedableRng, seq::IndexedRandom};
 
 use crate::api_client::ApiClient;
 
-const LOG_CONTEXT: &str = "SALES";
+const LOG_CONTEXT: &str = "WAREHOUSE";
 
-pub struct Sales {
+pub struct Warehouse {
     pub name: String,
     client: Arc<ApiClient>,
     token: Option<String>,
 }
 
-impl Sales {
+impl Warehouse {
     pub fn new(name: String, client: Arc<ApiClient>) -> Self {
         Self {
             name,
