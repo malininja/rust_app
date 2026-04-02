@@ -13,6 +13,7 @@ pub mod invoice_item_create_dto;
 pub mod invoice_item_response_dto;
 pub mod login_request_dto;
 pub mod login_response_dto;
+pub mod roles_enum;
 pub mod unit_of_measure;
 pub mod user_create_dto;
 pub mod user_response_dto;

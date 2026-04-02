@@ -1,14 +1,25 @@
-use std::{sync::Arc, time::Duration};
+use std::{collections::HashMap, sync::Arc, time::Duration};
 
 use rand::seq::IndexedRandom;
+use tokio::task::{AbortHandle, JoinSet};
 
-use crate::api_client::ApiClient;
+use crate::{
+    api_client::ApiClient,
+    helpers::generate_random_string,
+    models::{
+        roles_enum::Role, user_create_dto::UserCreateDto, user_response_dto::UserResponseDto,
+    },
+    personalities::sales::Sales,
+};
 
-const LOG_CONTEXT: &str = "Admin";
+const LOG_CONTEXT: &str = "ADMIN";
+const PASSWORD: &str = "123456";
 
 pub struct Admin {
     client: Arc<ApiClient>,
     auth_token: Option<String>,
+    sales_processes: JoinSet<()>,
+    sales_aborthandles: HashMap<String, AbortHandle>,
 }
 
 impl Admin {
@@ -16,12 +27,14 @@ impl Admin {
         Self {
             client,
             auth_token: None,
+            sales_processes: JoinSet::new(),
+            sales_aborthandles: HashMap::new(),
         }
     }
 
     pub async fn run(&mut self) {
         let mut rng = rand::rng();
-        let numbers: Vec<u64> = (1..15).collect();
+        let numbers: Vec<u64> = (20..40).collect();
 
         loop {
             self.run_once().await;
@@ -42,7 +55,45 @@ impl Admin {
             };
 
             if let Some(users) = users_option {
-                println!("{:?}", users);
+                let role_id: i32 = Role::Sales.into();
+                let sales_users: Vec<&UserResponseDto> =
+                    users.iter().filter(|u| u.role_id == role_id).collect();
+
+                for sales_user in &sales_users {
+                    if !self.sales_aborthandles.contains_key(&sales_user.username) {
+                        let sales = Sales::new(sales_user.username.clone(), self.client.clone());
+                        let aborthandle = self.sales_processes.spawn(sales.run());
+                        self.sales_aborthandles
+                            .insert(sales_user.username.clone(), aborthandle);
+
+                        tracing::info!(
+                            "{}. New sales agent added. {}",
+                            LOG_CONTEXT,
+                            &sales_user.username
+                        );
+                    }
+                }
+
+                if sales_users.len() < 3 {
+                    let create_dto = UserCreateDto {
+                        role_id,
+                        username: generate_random_string(8),
+                        password: PASSWORD.to_string(),
+                    };
+
+                    match self.client.user_create(&token, create_dto).await {
+                        Ok(res) => {
+                            tracing::info!(
+                                "{}. Sales user successfully created in the backend. Name = {}",
+                                LOG_CONTEXT,
+                                res.username
+                            );
+                        }
+                        Err(e) => {
+                            tracing::error!("{}. user_create error. error: {}", LOG_CONTEXT, e);
+                        }
+                    };
+                }
             }
         }
     }
@@ -65,7 +116,7 @@ impl Admin {
     async fn token_fetch(&self) -> Option<String> {
         match self
             .client
-            .login("admin".to_string(), "123456".to_string())
+            .login("admin".to_string(), PASSWORD.to_string())
             .await
         {
             Ok(token) => Some(token),
