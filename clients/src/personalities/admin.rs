@@ -137,13 +137,8 @@ impl Admin {
 
             let aborthandle = processes.spawn(user_future);
             aborthandles.insert(username.clone(), aborthandle);
-                              
-                                        tracing::info!(
-                                "{}. New {:?} agent added. {}",
-                                LOG_CONTEXT,
-                                role,
-                                &username
-                            );
+
+            tracing::info!("{}. New {:?} agent added. {}", LOG_CONTEXT, role, &username);
         }
     }
 
