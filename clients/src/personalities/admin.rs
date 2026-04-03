@@ -7,7 +7,8 @@ use crate::{
     api_client::ApiClient,
     helpers::generate_random_string,
     models::{
-        roles_enum::Role, user_create_dto::UserCreateDto, user_response_dto::UserResponseDto,
+        article_create_dto::ArticleCreateDto, roles_enum::Role, unit_of_measure::UnitOfMeasure,
+        user_create_dto::UserCreateDto, user_response_dto::UserResponseDto,
     },
     personalities::{sales::Sales, warehouse::Warehouse},
 };
@@ -59,13 +60,42 @@ impl Admin {
             };
 
             if let Some(users) = users_option {
-                self.handle_users(Role::Sales, &users).await;
-                self.handle_users(Role::Warehouse, &users).await;
+                self.handle_users(&token, Role::Sales, &users).await;
+                self.handle_users(&token, Role::Warehouse, &users).await;
             }
+
+            self.handle_articles(&token).await;
         }
     }
 
-    async fn handle_users(&mut self, role: Role, all_users: &[UserResponseDto]) {
+    async fn handle_articles(&self, token: &str) {
+        let articles = match self.client.articles_get(token).await {
+            Ok(res) => res,
+            Err(e) => {
+                tracing::error!("{}. handle_articles error: {}", LOG_CONTEXT, e);
+                return;
+            }
+        };
+
+        if articles.len() < 100 {
+            let create_dto = ArticleCreateDto {
+                name: generate_random_string(16),
+                unit_of_measure: UnitOfMeasure::Piece,
+            };
+
+            let article = match self.client.article_create(token, create_dto).await {
+                Ok(res) => res,
+                Err(e) => {
+                    tracing::error!("{}. handle_articles error: {}", LOG_CONTEXT, e);
+                    return;
+                }
+            };
+
+            tracing::info!("{}. New article created: {}", LOG_CONTEXT, article.name);
+        }
+    }
+
+    async fn handle_users(&mut self, token: &str, role: Role, all_users: &[UserResponseDto]) {
         let role_id: i32 = (&role).into();
         let users: Vec<&UserResponseDto> =
             all_users.iter().filter(|u| u.role_id == role_id).collect();
@@ -75,30 +105,28 @@ impl Admin {
         }
 
         if users.len() < 3 {
-            self.create_api_user(&role).await;
+            self.create_api_user(token, &role).await;
         }
     }
 
-    async fn create_api_user(&mut self, role: &Role) {
-        if let Some(token) = self.token_get().await {
-            let dto = UserCreateDto {
-                role_id: role.into(),
-                username: generate_random_string(8),
-                password: PASSWORD.to_string(),
-            };
+    async fn create_api_user(&mut self, token: &str, role: &Role) {
+        let dto = UserCreateDto {
+            role_id: role.into(),
+            username: generate_random_string(8),
+            password: PASSWORD.to_string(),
+        };
 
-            match self.client.user_create(&token, dto).await {
-                Ok(res) => {
-                    tracing::info!(
-                        "{}. {:?} user successfully created in the backend. Name = {}",
-                        LOG_CONTEXT,
-                        role,
-                        res.username
-                    );
-                }
-                Err(err) => {
-                    tracing::error!("{}. user_create error. error: {}", LOG_CONTEXT, err);
-                }
+        match self.client.user_create(token, dto).await {
+            Ok(res) => {
+                tracing::info!(
+                    "{}. {:?} user successfully created in the backend. Name = {}",
+                    LOG_CONTEXT,
+                    role,
+                    res.username
+                );
+            }
+            Err(err) => {
+                tracing::error!("{}. user_create error. error: {}", LOG_CONTEXT, err);
             }
         }
     }
