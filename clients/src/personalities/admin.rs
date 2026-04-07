@@ -4,6 +4,7 @@ use rand::seq::IndexedRandom;
 use tokio::task::{AbortHandle, JoinSet};
 
 use crate::{
+    PASSWORD,
     api_client::ApiClient,
     helpers::generate_random_string,
     models::{
@@ -14,7 +15,6 @@ use crate::{
 };
 
 const LOG_CONTEXT: &str = "ADMIN";
-const PASSWORD: &str = "123456";
 
 pub struct Admin {
     client: Arc<ApiClient>,

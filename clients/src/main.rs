@@ -7,6 +7,8 @@ pub mod helpers;
 pub mod models;
 pub mod personalities;
 
+pub const PASSWORD: &str = "123456";
+
 #[tokio::main(flavor = "current_thread")]
 async fn main() {
     let _ = dotenvy::dotenv();

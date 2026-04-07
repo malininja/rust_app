@@ -17,7 +17,7 @@ pub async fn get_all(
             .map(WarehouseStockResponseDto::from)
             .collect()),
         Err(e) => {
-            tracing::error!("{}: get_all_unconfirmed error: {}", LOG_CONTEXT, e);
+            tracing::error!("{}: get_all error: {}", LOG_CONTEXT, e);
             Err(WarehouseStockError::GetAllError)
         }
     }
