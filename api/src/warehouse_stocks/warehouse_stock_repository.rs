@@ -60,18 +60,34 @@ pub async fn update_quantity(
         .map(|(_, quantity)| *quantity)
         .collect();
 
-    sqlx::query!(
-        "
+    if !quantities.is_empty() && quantities[0] < Decimal::from(0) {
+        // When using INSERT ON CONFLICT UPDATE with negative quantities check constraint fails on insert, even though article exists
+        sqlx::query!(
+            "
+            UPDATE warehouse_stocks
+              SET quantity = warehouse_stocks.quantity + t.quantity
+              FROM UNNEST($1::UUID[], $2::NUMERIC[]) as t(article_id, quantity)
+              WHERE warehouse_stocks.article_id = t.article_id
+            ",
+            &article_ids,
+            &quantities
+        )
+        .execute(tx.as_mut())
+        .await?;
+    } else {
+        sqlx::query!(
+            "
             INSERT INTO warehouse_stocks (article_id, quantity) 
-              SELECT * FROM UNNEST($1::UUID[], $2::NUMERIC[])
+            SELECT * FROM UNNEST($1::UUID[], $2::NUMERIC[])
             ON CONFLICT (article_id)
             DO UPDATE SET quantity = warehouse_stocks.quantity + EXCLUDED.quantity
             ",
-        &article_ids,
-        &quantities,
-    )
-    .execute(tx.as_mut())
-    .await?;
+            &article_ids,
+            &quantities,
+        )
+        .execute(tx.as_mut())
+        .await?;
+    }
 
     Ok(())
 }

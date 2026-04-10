@@ -3,7 +3,7 @@
 CREATE TABLE warehouse_stocks (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   article_id UUID UNIQUE NOT NULL REFERENCES articles(id),
-  quantity NUMERIC(12, 4) NOT NULL DEFAULT 0,
+  quantity NUMERIC(12, 4) NOT NULL DEFAULT 0 CHECK (quantity >= 0),
   created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
   updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );

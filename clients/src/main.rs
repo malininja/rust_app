@@ -3,6 +3,7 @@ use std::sync::Arc;
 use crate::{api_client::ApiClient, personalities::admin::Admin};
 
 pub mod api_client;
+pub mod errors;
 pub mod helpers;
 pub mod models;
 pub mod personalities;

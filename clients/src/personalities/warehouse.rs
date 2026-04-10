@@ -6,6 +6,7 @@ use rust_decimal::Decimal;
 use crate::{
     PASSWORD,
     api_client::ApiClient,
+    errors::ApiError,
     helpers::generate_random_string,
     models::{
         goods_receipt_head_create_dto::GoodsReceiptHeadCreateDto,
@@ -53,6 +54,10 @@ impl Warehouse {
     async fn handle_goods_receipts(&mut self, token: &str) {
         let goods_receipts = match self.client.goods_receipts_get(token).await {
             Ok(res) => res,
+            Err(ApiError::Unauthorized) => {
+                self.reset_token().await;
+                return;
+            }
             Err(e) => {
                 tracing::error!("{}. goods_receipts_get error: {}", LOG_CONTEXT, e);
                 return;
@@ -68,6 +73,10 @@ impl Warehouse {
             match self.client.goods_receipt_confirm(token, &receipt1.id).await {
                 Ok(_) => {
                     tracing::info!("{}. goods receipt confirmed: {}", LOG_CONTEXT, &receipt1.id)
+                }
+                Err(ApiError::Unauthorized) => {
+                    self.reset_token().await;
+                    return;
                 }
                 Err(e) => {
                     tracing::error!("{}. goods_receipt_confirm error: {}", LOG_CONTEXT, e);
@@ -85,6 +94,9 @@ impl Warehouse {
                     Ok(_) => {
                         tracing::info!("{}. goods receipt deleted: {}", LOG_CONTEXT, &receipt2.id);
                     }
+                    Err(ApiError::Unauthorized) => {
+                        self.reset_token().await;
+                    }
                     Err(e) => {
                         tracing::error!("{}. goods_receipt_delete error: {}", LOG_CONTEXT, e);
                     }
@@ -96,6 +108,10 @@ impl Warehouse {
     async fn create_goods_receipt(&mut self, token: &str) {
         let stocks = match self.client.warehouse_stocks_get(token).await {
             Ok(res) => res,
+            Err(ApiError::Unauthorized) => {
+                self.reset_token().await;
+                return;
+            }
             Err(e) => {
                 tracing::error!("{}. warehouse_stock_get error: {}", LOG_CONTEXT, e);
                 return;
@@ -104,6 +120,10 @@ impl Warehouse {
 
         let articles = match self.client.articles_get(token).await {
             Ok(res) => res,
+            Err(ApiError::Unauthorized) => {
+                self.reset_token().await;
+                return;
+            }
             Err(e) => {
                 tracing::error!("{}. create_goods_receipt error: {}", LOG_CONTEXT, e);
                 return;
@@ -125,7 +145,7 @@ impl Warehouse {
         for _ in 0..*no_of_articles {
             let article = match articles.choose(&mut self.rng) {
                 Some(res) => res,
-                None => return,
+                None => continue,
             };
 
             let stock = stocks.iter().find(|i| i.article_id == article.id);
@@ -167,17 +187,23 @@ impl Warehouse {
                 LOG_CONTEXT,
                 res.supplier_name
             ),
+            Err(ApiError::Unauthorized) => {
+                self.reset_token().await;
+            }
             Err(e) => tracing::error!("{}. Error creating goods receipt: {}", LOG_CONTEXT, e),
         }
     }
 
+    async fn reset_token(&mut self) {
+        tracing::info!("{}. Reseting API token", LOG_CONTEXT);
+
+        self.auth_token = None;
+        self.token_get().await;
+    }
+
     async fn token_get(&mut self) -> Option<String> {
         if self.auth_token.is_none() {
-            let t_option = self.token_fetch().await;
-
-            if let Some(t) = t_option {
-                self.auth_token = Some(t);
-            }
+            self.auth_token = self.token_fetch().await;
         }
 
         self.auth_token.clone()
@@ -186,7 +212,7 @@ impl Warehouse {
     async fn token_fetch(&self) -> Option<String> {
         match self
             .client
-            .login("admin".to_string(), PASSWORD.to_string())
+            .login(self.name.clone(), PASSWORD.to_string())
             .await
         {
             Ok(token) => Some(token),
