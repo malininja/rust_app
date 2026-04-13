@@ -146,7 +146,10 @@ impl ApiClient {
             .await
         {
             Ok(res) => {
-                if res.status() != StatusCode::OK {
+                if res.status() == StatusCode::UNAUTHORIZED {
+                    return Err(ApiError::Unauthorized);
+                } else if res.status() != StatusCode::OK {
+                    tracing::error!("{}. get invalid status: {}", LOG_CONTEXT, res.status());
                     return Err(ApiError::InvalidStatus);
                 }
 
@@ -158,10 +161,11 @@ impl ApiClient {
                     }
                 }
             }
-            Err(_) => Err(ApiError::General),
+            Err(e) => {
+                tracing::error!("{}. get error: {}", LOG_CONTEXT, e);
+                Err(ApiError::General)
+            }
         }
-
-        // Ok(response_result.json::<T>().await?)
     }
 
     async fn post<T: Serialize, U: DeserializeOwned>(
@@ -179,14 +183,23 @@ impl ApiClient {
             .await;
 
         match response_result {
-            Ok(response) => match response.json::<U>().await {
-                Ok(parsed) => Ok(parsed),
-                Err(e) => {
-                    tracing::error!("{}. Error parsing post result: {}", LOG_CONTEXT, e);
-                    Err(ApiError::ResultParseError)
+            Ok(response) => {
+                if response.status() == StatusCode::UNAUTHORIZED {
+                    return Err(ApiError::Unauthorized);
                 }
-            },
-            Err(_) => Err(ApiError::General),
+
+                match response.json::<U>().await {
+                    Ok(parsed) => Ok(parsed),
+                    Err(e) => {
+                        tracing::error!("{}. Error parsing post result: {}", LOG_CONTEXT, e);
+                        Err(ApiError::ResultParseError)
+                    }
+                }
+            }
+            Err(e) => {
+                tracing::error!("{}. post error: {}", LOG_CONTEXT, e);
+                Err(ApiError::General)
+            }
         }
     }
 
@@ -199,7 +212,9 @@ impl ApiClient {
             .await
         {
             Ok(response) => {
-                if response.status() != StatusCode::NO_CONTENT {
+                if response.status() == StatusCode::UNAUTHORIZED {
+                    return Err(ApiError::Unauthorized);
+                } else if response.status() != StatusCode::NO_CONTENT {
                     tracing::error!(
                         "{}. delete invalid status: {}",
                         LOG_CONTEXT,
@@ -227,7 +242,9 @@ impl ApiClient {
             .await
         {
             Ok(response) => {
-                if response.status() != StatusCode::NO_CONTENT {
+                if response.status() == StatusCode::UNAUTHORIZED {
+                    return Err(ApiError::Unauthorized);
+                } else if response.status() != StatusCode::NO_CONTENT {
                     tracing::error!(
                         "{}. confirm invalid status: {}",
                         LOG_CONTEXT,
