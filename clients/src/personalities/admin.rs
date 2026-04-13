@@ -6,6 +6,7 @@ use tokio::task::{AbortHandle, JoinSet};
 use crate::{
     PASSWORD,
     api_client::ApiClient,
+    errors::ApiError,
     helpers::generate_random_string,
     models::{
         article_create_dto::ArticleCreateDto, roles_enum::Role, unit_of_measure::UnitOfMeasure,
@@ -53,6 +54,10 @@ impl Admin {
         if let Some(token) = self.token_get().await {
             let users_option = match self.client.users_get(&token).await {
                 Ok(users) => Some(users),
+                Err(ApiError::Unauthorized) => {
+                    self.reset_token().await;
+                    return;
+                }
                 Err(e) => {
                     tracing::error!("{}. users_fetch error: {}", LOG_CONTEXT, e);
                     None
@@ -68,9 +73,13 @@ impl Admin {
         }
     }
 
-    async fn handle_articles(&self, token: &str) {
+    async fn handle_articles(&mut self, token: &str) {
         let articles = match self.client.articles_get(token).await {
             Ok(res) => res,
+            Err(ApiError::Unauthorized) => {
+                self.reset_token().await;
+                return;
+            }
             Err(e) => {
                 tracing::error!("{}. handle_articles error: {}", LOG_CONTEXT, e);
                 return;
@@ -85,6 +94,10 @@ impl Admin {
 
             let article = match self.client.article_create(token, create_dto).await {
                 Ok(res) => res,
+                Err(ApiError::Unauthorized) => {
+                    self.reset_token().await;
+                    return;
+                }
                 Err(e) => {
                     tracing::error!("{}. handle_articles error: {}", LOG_CONTEXT, e);
                     return;
@@ -124,6 +137,9 @@ impl Admin {
                     role,
                     res.username
                 );
+            }
+            Err(ApiError::Unauthorized) => {
+                self.reset_token().await;
             }
             Err(err) => {
                 tracing::error!("{}. user_create error. error: {}", LOG_CONTEXT, err);
@@ -197,5 +213,12 @@ impl Admin {
                 None
             }
         }
+    }
+
+    async fn reset_token(&mut self) {
+        tracing::info!("{}. Reseting API token", LOG_CONTEXT);
+
+        self.auth_token = None;
+        self.token_get().await;
     }
 }

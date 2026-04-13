@@ -1,4 +1,4 @@
-use std::sync::Arc;
+use std::{env, sync::Arc};
 
 use crate::{api_client::ApiClient, personalities::admin::Admin};
 
@@ -15,7 +15,8 @@ async fn main() {
     let _ = dotenvy::dotenv();
     tracing_subscriber::fmt::init();
 
-    let client = Arc::new(ApiClient::new("http://127.0.0.1:3000".to_string()));
+    let api_url = env::var("API_URL").unwrap();
+    let client = Arc::new(ApiClient::new(api_url));
     let mut admin = Admin::new(client);
     admin.run().await;
 }
