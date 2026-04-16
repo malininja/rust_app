@@ -1,0 +1,53 @@
+services:
+  postgres:
+    image: postgres:latest
+    restart: unless-stopped
+    container_name: rust-app-postgres
+    ports:
+      - "15432:5432"
+    environment:
+      POSTGRES_USER: rust-app-user
+      POSTGRES_PASSWORD: rust-app-password
+      POSTGRES_DB: rust_app
+    volumes:
+      - postgres_data:/var/lib/postgresql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U rust-app-user -d rust_app"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  migrate:
+    build:
+      context: .
+      dockerfile: api/Dockerfile
+    command: ["sqlx", "migrate", "run"]
+    environment:
+      DATABASE_URL: postgresql://rust-app-user:rust-app-password@postgres:5432/rust_app
+    volumes:
+      - ./api/migrations:/app/migrations
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  api:
+    build:
+      context: .
+      dockerfile: api/Dockerfile
+    restart: unless-stopped
+    container_name: rust-app-api
+    ports:
+      - "3000:3000"
+    environment:
+      DATABASE_URL: postgresql://rust-app-user:rust-app-password@postgres:5432/rust_app
+      RUST_LOG: error,tower_http=debug,info
+      JWT_SECRET: long_random_string
+    depends_on:
+      postgres:
+        condition: service_healthy
+      migrate:
+        condition: service_completed_successfully
+
+volumes:
+  postgres_data:
+    driver: local
