@@ -172,10 +172,15 @@ impl PgInvoiceRepository {
 
     pub async fn soft_delete(&self, id: Uuid) -> Result<(), Error> {
         sqlx::query!(
-            "UPDATE invoice_heads SET deleted_at = NOW() WHERE id=$1",
+            "
+            UPDATE invoice_heads 
+            SET deleted_at = NOW() 
+            WHERE id=$1 AND confirmed<>true
+            RETURNING id
+            ",
             id
         )
-        .execute(&self.pool)
+        .fetch_one(&self.pool)
         .await?;
 
         Ok(())

@@ -164,10 +164,15 @@ impl PgGoodsReceiptRepository {
 
     pub async fn soft_delete(&self, id: Uuid) -> Result<(), Error> {
         sqlx::query!(
-            "UPDATE goods_receipt_heads SET deleted_at = NOW() WHERE id=$1",
+            "
+            UPDATE goods_receipt_heads 
+            SET deleted_at = NOW() 
+            WHERE id=$1 AND confirmed<>true
+            RETURNING id
+            ",
             id
         )
-        .execute(&self.pool)
+        .fetch_one(&self.pool)
         .await?;
 
         Ok(())
